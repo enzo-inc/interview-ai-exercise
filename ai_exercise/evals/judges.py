@@ -147,12 +147,19 @@ Focus on whether all important parts of the answer are present."""
 async def detect_hallucination_async(
     answer: str,
     context: list[str],
+    ground_truth: str,
 ) -> HallucinationJudgment:
     """Detect if an answer contains hallucinated (unsupported) claims.
+
+    In a RAG system, answers must be grounded in the retrieved context.
+    We also use ground truth to distinguish between:
+    - Factually correct but ungrounded claims (still problematic for RAG)
+    - Factually incorrect claims (worse - actual misinformation)
 
     Args:
         answer: The generated answer to check.
         context: The retrieved context chunks used to generate the answer.
+        ground_truth: The expected correct answer for reference.
 
     Returns:
         HallucinationJudgment indicating if hallucinations were found.
@@ -161,21 +168,29 @@ async def detect_hallucination_async(
 
     prompt = f"""You are detecting hallucinations in a RAG system's answer.
 
-A hallucination is a claim in the answer that is NOT supported by the provided context.
+A hallucination is a claim in the answer that is NOT supported by the retrieved context.
+In RAG systems, all claims must be grounded in the provided evidence.
 
-CONTEXT (Retrieved Chunks):
+RETRIEVED CONTEXT:
 {context_text}
+
+GROUND TRUTH ANSWER (for reference - use to identify factually wrong claims):
+{ground_truth}
 
 GENERATED ANSWER:
 {answer}
 
 Analyze the answer and identify any claims that are:
-1. Not mentioned in the context
+1. Not mentioned or supported by the retrieved context
 2. Contradict the context
-3. Are made up or fabricated
+3. Are made up or fabricated (specific details not in context)
 
-Be strict: if specific details (numbers, names, technical specs) appear in the answer
-but not in the context, they are likely hallucinations."""
+Note: Even if a claim happens to be factually correct (matches ground truth),
+if it's not supported by the retrieved context, it's still an ungrounded claim.
+However, prioritize flagging claims that are both ungrounded AND factually wrong.
+
+Be strict: if specific details (numbers, names, technical specs, endpoint paths)
+appear in the answer but not in the context, they are hallucinations."""
 
     response = await async_openai_client.beta.chat.completions.parse(
         model=SETTINGS.openai_model,
@@ -209,7 +224,7 @@ async def judge_answer_async(
     accuracy, completeness, hallucination = await asyncio.gather(
         judge_accuracy_async(question, answer, ground_truth),
         judge_completeness_async(question, answer, ground_truth),
-        detect_hallucination_async(answer, context),
+        detect_hallucination_async(answer, context, ground_truth),
     )
     return accuracy, completeness, hallucination
 

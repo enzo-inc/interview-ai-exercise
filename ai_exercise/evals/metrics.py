@@ -31,79 +31,96 @@ class EvalResult:
     question_id: str
     question: str
     category: str
-    retrieved_chunks: list[str]
+    retrieved_chunks: list[str]  # Chunk content
+    retrieved_chunk_ids: list[str]  # Chunk IDs for proper matching
     generated_answer: str
     ground_truth_answer: str
+    ground_truth_chunks: list[str]  # Human-readable chunk references
+    ground_truth_chunk_ids: list[str]  # Normalized chunk IDs for matching
+    relevant_apis: list[str]  # APIs relevant to this question
     retrieval_hit: bool
+    first_relevant_rank: int | None  # Rank of first relevant chunk (1-indexed), None if no hit
     keyword_coverage: float
     accuracy_score: int
     completeness_score: int
     has_hallucination: bool
 
 
+def chunk_id_matches(retrieved_id: str, gt_id: str) -> bool:
+    """Check if a retrieved chunk ID matches a ground truth chunk ID.
+
+    Handles split chunks (e.g., "hris_paths_x_part0" matches "hris_paths_x").
+    """
+    if retrieved_id == gt_id:
+        return True
+    # Handle split chunks - retrieved might be "base_id_partN"
+    if retrieved_id.startswith(gt_id + "_part"):
+        return True
+    return False
+
+
 def hit_rate_at_k(
-    retrieved_chunks_list: list[list[str]],
-    ground_truth_chunks_list: list[list[str]],
+    retrieved_chunk_ids_list: list[list[str]],
+    ground_truth_chunk_ids_list: list[list[str]],
     k: int = 5,
 ) -> float:
-    """Calculate Hit Rate@K.
+    """Calculate Hit Rate@K using chunk ID matching.
 
     Hit Rate@K measures the percentage of queries where at least one
     relevant chunk appears in the top-K retrieved results.
 
     Args:
-        retrieved_chunks_list: List of retrieved chunk lists per query.
-        ground_truth_chunks_list: List of ground truth chunk identifiers per query.
+        retrieved_chunk_ids_list: List of retrieved chunk ID lists per query.
+        ground_truth_chunk_ids_list: List of ground truth chunk ID lists per query.
         k: Number of top results to consider.
 
     Returns:
         Hit rate as a float between 0 and 1.
     """
-    if not retrieved_chunks_list:
+    if not retrieved_chunk_ids_list:
         return 0.0
 
     hits = 0
-    for retrieved, ground_truth in zip(
-        retrieved_chunks_list, ground_truth_chunks_list, strict=False
+    for retrieved_ids, gt_ids in zip(
+        retrieved_chunk_ids_list, ground_truth_chunk_ids_list, strict=False
     ):
-        top_k = retrieved[:k]
-        # Check if any ground truth chunk appears in retrieved chunks
-        # Using substring matching since chunks may be partial matches
-        for gt_chunk in ground_truth:
-            if any(gt_chunk.lower() in chunk.lower() for chunk in top_k):
+        top_k = retrieved_ids[:k]
+        # Check if any ground truth chunk appears in retrieved chunks using ID matching
+        for gt_id in gt_ids:
+            if any(chunk_id_matches(ret_id, gt_id) for ret_id in top_k):
                 hits += 1
                 break
 
-    return hits / len(retrieved_chunks_list)
+    return hits / len(retrieved_chunk_ids_list)
 
 
 def mrr(
-    retrieved_chunks_list: list[list[str]],
-    ground_truth_chunks_list: list[list[str]],
+    retrieved_chunk_ids_list: list[list[str]],
+    ground_truth_chunk_ids_list: list[list[str]],
 ) -> float:
-    """Calculate Mean Reciprocal Rank (MRR).
+    """Calculate Mean Reciprocal Rank (MRR) using chunk ID matching.
 
     MRR measures the average of reciprocal ranks of the first relevant
     result across all queries.
 
     Args:
-        retrieved_chunks_list: List of retrieved chunk lists per query.
-        ground_truth_chunks_list: List of ground truth chunk identifiers per query.
+        retrieved_chunk_ids_list: List of retrieved chunk ID lists per query.
+        ground_truth_chunk_ids_list: List of ground truth chunk ID lists per query.
 
     Returns:
         MRR as a float between 0 and 1.
     """
-    if not retrieved_chunks_list:
+    if not retrieved_chunk_ids_list:
         return 0.0
 
     reciprocal_ranks = []
-    for retrieved, ground_truth in zip(
-        retrieved_chunks_list, ground_truth_chunks_list, strict=False
+    for retrieved_ids, gt_ids in zip(
+        retrieved_chunk_ids_list, ground_truth_chunk_ids_list, strict=False
     ):
         rank = 0
-        for i, chunk in enumerate(retrieved, 1):
-            for gt_chunk in ground_truth:
-                if gt_chunk.lower() in chunk.lower():
+        for i, ret_id in enumerate(retrieved_ids, 1):
+            for gt_id in gt_ids:
+                if chunk_id_matches(ret_id, gt_id):
                     rank = i
                     break
             if rank > 0:
@@ -118,39 +135,39 @@ def mrr(
 
 
 def precision_at_k(
-    retrieved_chunks_list: list[list[str]],
-    ground_truth_chunks_list: list[list[str]],
+    retrieved_chunk_ids_list: list[list[str]],
+    ground_truth_chunk_ids_list: list[list[str]],
     k: int = 5,
 ) -> float:
-    """Calculate Precision@K.
+    """Calculate Precision@K using chunk ID matching.
 
     Precision@K measures the proportion of relevant chunks among
     the top-K retrieved results, averaged across all queries.
 
     Args:
-        retrieved_chunks_list: List of retrieved chunk lists per query.
-        ground_truth_chunks_list: List of ground truth chunk identifiers per query.
+        retrieved_chunk_ids_list: List of retrieved chunk ID lists per query.
+        ground_truth_chunk_ids_list: List of ground truth chunk ID lists per query.
         k: Number of top results to consider.
 
     Returns:
         Precision@K as a float between 0 and 1.
     """
-    if not retrieved_chunks_list:
+    if not retrieved_chunk_ids_list:
         return 0.0
 
     precisions = []
-    for retrieved, ground_truth in zip(
-        retrieved_chunks_list, ground_truth_chunks_list, strict=False
+    for retrieved_ids, gt_ids in zip(
+        retrieved_chunk_ids_list, ground_truth_chunk_ids_list, strict=False
     ):
-        top_k = retrieved[:k]
+        top_k = retrieved_ids[:k]
         if not top_k:
             precisions.append(0.0)
             continue
 
         relevant_count = 0
-        for chunk in top_k:
-            for gt_chunk in ground_truth:
-                if gt_chunk.lower() in chunk.lower():
+        for retrieved_id in top_k:
+            for gt_id in gt_ids:
+                if chunk_id_matches(retrieved_id, gt_id):
                     relevant_count += 1
                     break
 
@@ -160,41 +177,41 @@ def precision_at_k(
 
 
 def recall_at_k(
-    retrieved_chunks_list: list[list[str]],
-    ground_truth_chunks_list: list[list[str]],
+    retrieved_chunk_ids_list: list[list[str]],
+    ground_truth_chunk_ids_list: list[list[str]],
     k: int = 5,
 ) -> float:
-    """Calculate Recall@K.
+    """Calculate Recall@K using chunk ID matching.
 
     Recall@K measures the proportion of all relevant chunks that
     appear in the top-K retrieved results, averaged across all queries.
 
     Args:
-        retrieved_chunks_list: List of retrieved chunk lists per query.
-        ground_truth_chunks_list: List of ground truth chunk identifiers per query.
+        retrieved_chunk_ids_list: List of retrieved chunk ID lists per query.
+        ground_truth_chunk_ids_list: List of ground truth chunk ID lists per query.
         k: Number of top results to consider.
 
     Returns:
         Recall@K as a float between 0 and 1.
     """
-    if not retrieved_chunks_list:
+    if not retrieved_chunk_ids_list:
         return 0.0
 
     recalls = []
-    for retrieved, ground_truth in zip(
-        retrieved_chunks_list, ground_truth_chunks_list, strict=False
+    for retrieved_ids, gt_ids in zip(
+        retrieved_chunk_ids_list, ground_truth_chunk_ids_list, strict=False
     ):
-        if not ground_truth:
+        if not gt_ids:
             recalls.append(1.0)  # No ground truth = trivially all retrieved
             continue
 
-        top_k = retrieved[:k]
+        top_k = retrieved_ids[:k]
         found_count = 0
-        for gt_chunk in ground_truth:
-            if any(gt_chunk.lower() in chunk.lower() for chunk in top_k):
+        for gt_id in gt_ids:
+            if any(chunk_id_matches(ret_id, gt_id) for ret_id in top_k):
                 found_count += 1
 
-        recalls.append(found_count / len(ground_truth))
+        recalls.append(found_count / len(gt_ids))
 
     return sum(recalls) / len(recalls)
 
@@ -237,15 +254,31 @@ def compute_retrieval_metrics(
             hit_rate_at_k=0.0, mrr=0.0, precision_at_k=0.0, recall_at_k=0.0, k=k
         )
 
-    # Calculate hit rate from individual results
+    # Hit Rate@K: % of queries with at least one relevant chunk in top-K
     hits = sum(1 for r in in_scope_results if r.retrieval_hit)
     hit_rate = hits / len(in_scope_results)
 
+    # MRR: Mean Reciprocal Rank - uses first_relevant_rank from EvalResult
+    reciprocal_ranks = []
+    for r in in_scope_results:
+        if r.first_relevant_rank is not None and r.first_relevant_rank <= k:
+            reciprocal_ranks.append(1.0 / r.first_relevant_rank)
+        else:
+            reciprocal_ranks.append(0.0)
+    mrr_value = sum(reciprocal_ranks) / len(reciprocal_ranks)
+
+    # Precision@K and Recall@K: Use chunk ID matching
+    retrieved_chunk_ids_list = [r.retrieved_chunk_ids for r in in_scope_results]
+    ground_truth_chunk_ids_list = [r.ground_truth_chunk_ids for r in in_scope_results]
+
+    precision_value = precision_at_k(retrieved_chunk_ids_list, ground_truth_chunk_ids_list, k)
+    recall_value = recall_at_k(retrieved_chunk_ids_list, ground_truth_chunk_ids_list, k)
+
     return RetrievalMetrics(
         hit_rate_at_k=hit_rate,
-        mrr=hit_rate,  # Simplified - would need rank info for true MRR
-        precision_at_k=hit_rate,  # Simplified
-        recall_at_k=hit_rate,  # Simplified
+        mrr=mrr_value,
+        precision_at_k=precision_value,
+        recall_at_k=recall_value,
         k=k,
     )
 

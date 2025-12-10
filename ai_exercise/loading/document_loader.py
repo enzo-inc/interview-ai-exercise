@@ -8,7 +8,7 @@ import requests
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from ai_exercise.constants import OPENAPI_SPECS, SETTINGS
-from ai_exercise.loading.chunk_json import chunk_data
+from ai_exercise.loading.chunk_json import chunk_data_with_ids
 from ai_exercise.models import Document
 
 
@@ -28,42 +28,46 @@ def get_json_data(url: str) -> dict[str, Any]:
     return json_data
 
 
-def document_json_array(
-    data: list[dict[str, Any]], source: str, api_name: str
+def document_json_array_with_ids(
+    chunks_with_ids: list[tuple[str, dict[str, Any]]], source: str, api_name: str
 ) -> list[Document]:
-    """Converts an array of JSON chunks into a list of Document objects.
+    """Converts an array of (chunk_id, chunk_data) tuples into Document objects.
 
     Args:
-        data: List of JSON chunks to convert.
+        chunks_with_ids: List of (chunk_id, chunk_data) tuples.
         source: The source type (paths, webhooks, or components).
         api_name: The name of the API this chunk belongs to.
 
     Returns:
-        List of Document objects with metadata.
+        List of Document objects with metadata including chunk_id.
     """
     return [
         Document(
-            page_content=json.dumps(item),
-            metadata={"source": source, "api_name": api_name},
+            page_content=json.dumps(chunk_data),
+            metadata={
+                "source": source,
+                "api_name": api_name,
+                "chunk_id": chunk_id,
+            },
         )
-        for item in data
+        for chunk_id, chunk_data in chunks_with_ids
     ]
 
 
 def build_docs(data: dict[str, Any], api_name: str) -> list[Document]:
-    """Chunk (badly) and convert the JSON data into a list of Document objects.
+    """Chunk and convert the JSON data into a list of Document objects.
 
     Args:
         data: The JSON data to chunk and convert.
         api_name: The name of the API this data belongs to.
 
     Returns:
-        List of Document objects with metadata.
+        List of Document objects with metadata including chunk IDs.
     """
     docs = []
     for attribute in ["paths", "webhooks", "components"]:
-        chunks = chunk_data(data, attribute)
-        docs.extend(document_json_array(chunks, attribute, api_name))
+        chunks_with_ids = chunk_data_with_ids(data, attribute, api_name)
+        docs.extend(document_json_array_with_ids(chunks_with_ids, attribute, api_name))
     return docs
 
 
@@ -85,17 +89,40 @@ def load_all_specs() -> list[Document]:
 
 
 def split_docs(docs_array: list[Document]) -> list[Document]:
-    """Some may still be too long, so we split them."""
+    """Some may still be too long, so we split them.
+
+    Preserves chunk_id in metadata, appending a sub-index for split chunks.
+    """
     splitter = RecursiveCharacterTextSplitter(
         separators=["}],", "},", "}", "]", " ", ""], chunk_size=SETTINGS.chunk_size
     )
-    return splitter.split_documents(docs_array)
+
+    # Split documents and preserve chunk IDs
+    split_documents = []
+    for doc in docs_array:
+        splits = splitter.split_documents([doc])
+        base_chunk_id = doc.metadata.get("chunk_id", "unknown")
+
+        if len(splits) == 1:
+            # No splitting needed, keep original chunk_id
+            split_documents.append(splits[0])
+        else:
+            # Multiple splits, append sub-index to chunk_id
+            for idx, split_doc in enumerate(splits):
+                split_doc.metadata["chunk_id"] = f"{base_chunk_id}_part{idx}"
+                split_doc.metadata["parent_chunk_id"] = base_chunk_id
+                split_documents.append(split_doc)
+
+    return split_documents
 
 
 def add_documents(
     collection: chromadb.Collection, docs: list[Document], batch_size: int = 100
 ) -> None:
     """Add documents to the collection in batches.
+
+    Uses chunk_id from metadata as the ChromaDB document ID for deterministic
+    retrieval matching.
 
     Args:
         collection: ChromaDB collection to add to.
@@ -105,9 +132,11 @@ def add_documents(
     total = len(docs)
     for i in range(0, total, batch_size):
         batch = docs[i : i + batch_size]
+        # Use chunk_id from metadata as ChromaDB ID
+        ids = [doc.metadata.get("chunk_id", f"doc_{i + j}") for j, doc in enumerate(batch)]
         collection.add(
             documents=[doc.page_content for doc in batch],
             metadatas=[doc.metadata or {} for doc in batch],
-            ids=[f"doc_{j}" for j in range(i, i + len(batch))],
+            ids=ids,
         )
         print(f"Added batch {i // batch_size + 1} ({i + len(batch)}/{total})")

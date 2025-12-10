@@ -31,8 +31,57 @@ from ai_exercise.evals.metrics import (
 )
 from ai_exercise.llm.completions import create_prompt
 from ai_exercise.llm.embeddings import openai_ef
-from ai_exercise.retrieval.retrieval import get_relevant_chunks
+from ai_exercise.loading.chunk_json import generate_chunk_id, normalize_chunk_id
+from ai_exercise.retrieval.retrieval import get_relevant_chunks_with_ids
 from ai_exercise.retrieval.vector_store import create_collection
+
+
+def normalize_ground_truth_chunk(gt_chunk: str, relevant_apis: list[str]) -> list[str]:
+    """Convert a ground truth chunk reference to possible chunk IDs.
+
+    Ground truth chunks may be in formats like:
+    - "/unified/hris/employees" (path)
+    - "Schema EmployeeResult" (schema reference)
+    - "ATS /unified/ats/applications" (with API prefix)
+
+    Returns list of possible chunk IDs that could match.
+    """
+    possible_ids = []
+    gt_lower = gt_chunk.lower().strip()
+
+    # Handle "Schema X" format
+    if gt_lower.startswith("schema "):
+        schema_name = gt_chunk[7:].strip()  # Remove "Schema " prefix
+        for api in relevant_apis:
+            possible_ids.append(generate_chunk_id(api, "components", schema_name))
+    # Handle "API /path" format (e.g., "ATS /unified/ats/applications")
+    elif " /" in gt_chunk:
+        parts = gt_chunk.split(" /", 1)
+        api_hint = parts[0].lower().strip()
+        path = "/" + parts[1].strip()
+        # Try the hinted API first, then all relevant APIs
+        if api_hint in relevant_apis:
+            possible_ids.append(generate_chunk_id(api_hint, "paths", path))
+        for api in relevant_apis:
+            if api != api_hint:
+                possible_ids.append(generate_chunk_id(api, "paths", path))
+    # Handle plain path format
+    elif gt_chunk.startswith("/"):
+        for api in relevant_apis:
+            possible_ids.append(generate_chunk_id(api, "paths", gt_chunk))
+    # Handle webhook format
+    elif "webhook" in gt_lower:
+        webhook_name = gt_chunk.replace("Webhook ", "").replace("webhook ", "").strip()
+        for api in relevant_apis:
+            possible_ids.append(generate_chunk_id(api, "webhooks", webhook_name))
+    # Generic - try all combinations
+    else:
+        normalized = normalize_chunk_id(gt_chunk)
+        for api in relevant_apis:
+            for source in ["paths", "components", "webhooks"]:
+                possible_ids.append(f"{api}_{source}_{normalized}")
+
+    return possible_ids
 
 
 async def evaluate_single_question_async(
@@ -54,13 +103,17 @@ async def evaluate_single_question_async(
     """
     import asyncio
 
-    # Retrieve relevant chunks (run in thread to not block)
-    retrieved_chunks = await asyncio.to_thread(
-        get_relevant_chunks,
+    # Retrieve relevant chunks with IDs (run in thread to not block)
+    retrieved_chunk_objs = await asyncio.to_thread(
+        get_relevant_chunks_with_ids,
         collection=collection,
         query=question.question,
         k=SETTINGS.k_neighbors,
     )
+
+    # Extract content and IDs
+    retrieved_chunks = [chunk.content for chunk in retrieved_chunk_objs]
+    retrieved_chunk_ids = [chunk.chunk_id for chunk in retrieved_chunk_objs]
 
     # Generate answer using RAG with async client
     prompt = create_prompt(query=question.question, context=retrieved_chunks)
@@ -70,12 +123,37 @@ async def evaluate_single_question_async(
     )
     generated_answer = response.choices[0].message.content or ""
 
-    # Check retrieval hit (any ground truth chunk found in retrieved)
-    retrieval_hit = False
+    # Convert ground truth chunks to possible chunk IDs
+    gt_chunk_ids = set()
     for gt_chunk in question.ground_truth_chunks:
-        if any(gt_chunk.lower() in chunk.lower() for chunk in retrieved_chunks):
+        possible_ids = normalize_ground_truth_chunk(gt_chunk, question.relevant_apis)
+        gt_chunk_ids.update(possible_ids)
+
+    # Check retrieval hit using chunk ID matching
+    # Also support parent_chunk_id matching for split chunks
+    retrieval_hit = False
+    first_relevant_rank = None
+
+    for rank, chunk_obj in enumerate(retrieved_chunk_objs, 1):
+        chunk_id = chunk_obj.chunk_id
+        parent_id = chunk_obj.metadata.get("parent_chunk_id")
+
+        # Check if this chunk ID matches any ground truth ID
+        # Use prefix matching to handle split chunks (e.g., "hris_paths_x_part0" matches "hris_paths_x")
+        is_match = False
+        for gt_id in gt_chunk_ids:
+            if chunk_id == gt_id or chunk_id.startswith(gt_id + "_part"):
+                is_match = True
+                break
+            if parent_id and parent_id == gt_id:
+                is_match = True
+                break
+
+        if is_match:
             retrieval_hit = True
-            break
+            if first_relevant_rank is None:
+                first_relevant_rank = rank
+            break  # Found first relevant, no need to continue
 
     # Calculate keyword coverage
     kw_coverage = keyword_coverage(generated_answer, question.required_keywords)
@@ -104,9 +182,14 @@ async def evaluate_single_question_async(
         question=question.question,
         category=question.category,
         retrieved_chunks=retrieved_chunks,
+        retrieved_chunk_ids=retrieved_chunk_ids,
         generated_answer=generated_answer,
         ground_truth_answer=question.ground_truth_answer,
+        ground_truth_chunks=question.ground_truth_chunks,
+        ground_truth_chunk_ids=list(gt_chunk_ids),
+        relevant_apis=question.relevant_apis,
         retrieval_hit=retrieval_hit,
+        first_relevant_rank=first_relevant_rank,
         keyword_coverage=kw_coverage,
         accuracy_score=accuracy_score,
         completeness_score=completeness_score,
@@ -247,9 +330,14 @@ def save_results(
                 "question_id": r.question_id,
                 "question": r.question,
                 "category": r.category,
+                "relevant_apis": r.relevant_apis,
                 "generated_answer": r.generated_answer,
                 "ground_truth_answer": r.ground_truth_answer,
+                "ground_truth_chunks": r.ground_truth_chunks,
+                "ground_truth_chunk_ids": r.ground_truth_chunk_ids,
+                "retrieved_chunk_ids": r.retrieved_chunk_ids,
                 "retrieval_hit": r.retrieval_hit,
+                "first_relevant_rank": r.first_relevant_rank,
                 "keyword_coverage": r.keyword_coverage,
                 "accuracy_score": r.accuracy_score,
                 "completeness_score": r.completeness_score,
