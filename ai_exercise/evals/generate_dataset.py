@@ -11,12 +11,28 @@ from datetime import datetime
 from typing import Any
 
 import aiohttp
+import openai
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 from tqdm.asyncio import tqdm_asyncio
 
 from ai_exercise.constants import OPENAPI_SPECS, SETTINGS
 from ai_exercise.evals.datasets import EvalQuestion, GeneratedDataset, save_eval_dataset
+
+
+# Retry decorator for OpenAI API calls with rate limiting
+openai_retry = retry(
+    retry=retry_if_exception_type(openai.RateLimitError),
+    wait=wait_exponential(multiplier=1, min=2, max=60),
+    stop=stop_after_attempt(6),
+    reraise=True,
+)
 
 # Sampling configuration
 MAX_PATHS_PER_SAMPLE = 15  # Sample this many paths per generation call
@@ -39,6 +55,17 @@ class QuestionBatch(BaseModel):
     questions: list[EvalQuestion] = Field(
         description="List of generated evaluation questions"
     )
+
+
+@openai_retry
+async def _call_openai_parse(prompt: str) -> QuestionBatch | None:
+    """Make an OpenAI API call with retry logic for rate limits."""
+    response = await async_openai_client.beta.chat.completions.parse(
+        model=SETTINGS.openai_model,
+        messages=[{"role": "user", "content": prompt}],
+        response_format=QuestionBatch,
+    )
+    return response.choices[0].message.parsed
 
 
 # Question category specifications
@@ -415,13 +442,7 @@ Do NOT generate questions about:
 - Paths or schemas that aren't in the sampled content above
 """
 
-    response = await async_openai_client.beta.chat.completions.parse(
-        model=SETTINGS.openai_model,
-        messages=[{"role": "user", "content": prompt}],
-        response_format=QuestionBatch,
-    )
-
-    questions = response.choices[0].message.parsed
+    questions = await _call_openai_parse(prompt)
     if questions is None:
         return []
 
@@ -495,13 +516,7 @@ Do NOT generate questions about:
 - Generic questions that could be answered from a single API
 """
 
-    response = await async_openai_client.beta.chat.completions.parse(
-        model=SETTINGS.openai_model,
-        messages=[{"role": "user", "content": prompt}],
-        response_format=QuestionBatch,
-    )
-
-    questions = response.choices[0].message.parsed
+    questions = await _call_openai_parse(prompt)
     if questions is None:
         return []
 
@@ -551,13 +566,7 @@ Requirements:
 5. IDs should follow format: out_of_scope_XXX
 """
 
-    response = await async_openai_client.beta.chat.completions.parse(
-        model=SETTINGS.openai_model,
-        messages=[{"role": "user", "content": prompt}],
-        response_format=QuestionBatch,
-    )
-
-    questions = response.choices[0].message.parsed
+    questions = await _call_openai_parse(prompt)
     if questions is None:
         return []
 

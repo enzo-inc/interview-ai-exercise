@@ -21,6 +21,7 @@ dependencies = [
     { name = "openai" },
     { name = "pydantic-settings" },
     { name = "tabulate" },
+    { name = "tenacity" },
     { name = "tqdm" },
     { name = "watchdog" },
 ]
@@ -52,6 +53,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7.3" },
     { name = "streamlit", marker = "extra == 'streamlit-demo'", specifier = ">=1.25.0" },
     { name = "tabulate", specifier = ">=0.9.0" },
+    { name = "tenacity", specifier = ">=8.2.0" },
     { name = "tqdm", specifier = ">=4.66.0" },
     { name = "watchdog", specifier = ">=3.0.0" },
     { name = "watchdog", marker = "extra == 'streamlit-demo'", specifier = ">=3.0.0" },
