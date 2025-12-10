@@ -3,10 +3,40 @@
 from openai import OpenAI
 
 
-def create_prompt(query: str, context: list[str]) -> str:
-    """Create a prompt combining query and context"""
+def create_prompt(
+    query: str,
+    context: list[str],
+    use_unknown_detection: bool = False,
+) -> str:
+    """Create a prompt combining query and context.
+
+    Args:
+        query: The user's question.
+        context: List of relevant context chunks.
+        use_unknown_detection: If True, add enhanced prompting to detect
+            when the context doesn't contain enough information to answer.
+
+    Returns:
+        Formatted prompt string.
+    """
     context_str = "\n\n".join(context)
-    return f"""Please answer the question based on the following context:
+
+    if use_unknown_detection:
+        return f"""Please answer the question based on the following context from StackOne API documentation.
+
+Context:
+{context_str}
+
+Question: {query}
+
+IMPORTANT: If the provided context does not contain enough information to answer the question accurately, respond with:
+"I don't have enough information in the StackOne documentation to answer this question. [Brief explanation of what was found, if anything]"
+
+Do NOT guess or make up information about API fields, endpoints, or behavior. Only provide information that is explicitly supported by the context above.
+
+Answer:"""
+    else:
+        return f"""Please answer the question based on the following context:
 
 Context:
 {context_str}

@@ -283,8 +283,12 @@ async def chat_route(chat_query: ChatQuery) -> ChatOutput:
                 )
             )
 
-    # Create prompt with context
-    prompt = create_prompt(query=chat_query.query, context=context)
+    # Create prompt with context (use unknown detection if enabled in config)
+    prompt = create_prompt(
+        query=chat_query.query,
+        context=context,
+        use_unknown_detection=config.use_unknown_detection,
+    )
 
     print(f"Prompt: {prompt}")
 

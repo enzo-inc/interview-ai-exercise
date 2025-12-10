@@ -78,6 +78,9 @@ with st.sidebar:
                     "c0": "Baseline",
                     "c1": "Smart Chunking",
                     "c2": "Hybrid Search",
+                    "c3": "Metadata Filtering",
+                    "c4": "Reranking",
+                    "c5": "Full System",
                 }
                 selected_config = st.selectbox(
                     "Select Configuration",

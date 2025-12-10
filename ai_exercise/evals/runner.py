@@ -87,6 +87,7 @@ async def evaluate_single_question_async(
     )
     use_metadata_filtering = config is not None and config.use_metadata_filtering
     use_reranking = config is not None and config.use_reranking
+    use_unknown_detection = config is not None and config.use_unknown_detection
 
     # Detect query intent for metadata filtering if enabled (async)
     api_filter: list[str] | None = None
@@ -132,7 +133,11 @@ async def evaluate_single_question_async(
     retrieved_chunk_ids = [chunk.chunk_id for chunk in retrieved_chunk_objs]
 
     # Generate answer using RAG with async client
-    prompt = create_prompt(query=question.question, context=retrieved_chunks)
+    prompt = create_prompt(
+        query=question.question,
+        context=retrieved_chunks,
+        use_unknown_detection=use_unknown_detection,
+    )
     response = await async_client.chat.completions.create(
         model=SETTINGS.openai_model,
         messages=[{"role": "user", "content": prompt}],
@@ -248,6 +253,8 @@ async def run_evaluation_async(
         click.echo("Using METADATA FILTERING (query intent detection)")
     if config.use_reranking:
         click.echo("Using LLM RE-RANKING")
+    if config.use_unknown_detection:
+        click.echo("Using UNKNOWN DETECTION prompting")
 
     # Create async OpenAI client
     async_client = AsyncOpenAI(api_key=SETTINGS.openai_api_key.get_secret_value())

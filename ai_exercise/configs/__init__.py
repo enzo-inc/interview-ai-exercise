@@ -6,6 +6,7 @@ from ai_exercise.configs.c1_smart_chunking import C1_SMART_CHUNKING
 from ai_exercise.configs.c2_hybrid import C2_HYBRID
 from ai_exercise.configs.c3_metadata_filtering import C3_METADATA_FILTERING
 from ai_exercise.configs.c4_reranking import C4_RERANKING
+from ai_exercise.configs.c5_full import C5_FULL
 
 __all__ = [
     "C0_BASELINE",
@@ -13,5 +14,6 @@ __all__ = [
     "C2_HYBRID",
     "C3_METADATA_FILTERING",
     "C4_RERANKING",
+    "C5_FULL",
     "SystemConfig",
 ]
