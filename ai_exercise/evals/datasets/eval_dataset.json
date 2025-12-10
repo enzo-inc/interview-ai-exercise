@@ -1,0 +1,1966 @@
+{
+  "version": "1.0",
+  "description": "Synthetic evaluation dataset for StackOne RAG system (generated with random sampling for broad spec coverage)",
+  "generation_metadata": {
+    "generated_at": "2025-12-10T14:56:28.424853",
+    "model": "gpt-5.1-2025-11-13",
+    "api_specs": [
+      "stackone",
+      "hris",
+      "ats",
+      "lms",
+      "iam",
+      "crm",
+      "marketing"
+    ],
+    "sampling_config": {
+      "max_paths_per_sample": 15,
+      "max_schemas_per_sample": 20,
+      "samples_per_api": 3,
+      "cross_api_paths_per_api": 5,
+      "cross_api_schemas_per_api": 5,
+      "cross_api_samples": 3,
+      "cross_api_questions_per_sample": 3
+    },
+    "total_questions": 84,
+    "questions_by_category": {
+      "factual": 21,
+      "endpoint": 21,
+      "schema": 21,
+      "auth": 7,
+      "cross_api": 9,
+      "out_of_scope": 5
+    }
+  },
+  "questions": [
+    {
+      "id": "factual_stackone_s0_001",
+      "question": "When creating a connect session via POST /connect_sessions, what is the default value of the \"expires_in\" field in the ConnectSessionCreate schema, and in what unit is this duration expressed?",
+      "category": "factual",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "In the ConnectSessionCreate schema used by POST /connect_sessions, the \"expires_in\" field defaults to 1800, and this value is expressed in seconds.",
+      "ground_truth_chunks": [
+        "/connect_sessions",
+        "ConnectSessionCreate"
+      ],
+      "required_keywords": [
+        "expires_in",
+        "1800",
+        "seconds",
+        "ConnectSessionCreate"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_stackone_s1_001",
+      "question": "When calling the StackOne `/unified/proxy` endpoint, which HTTP status code indicates that the linked account belongs to a disabled integration, and what is the name of the corresponding error response schema?",
+      "category": "factual",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "For the `/unified/proxy` POST endpoint, HTTP status code **412** indicates that the linked account belongs to a disabled integration. The corresponding error response schema is **`PreconditionFailedResponse`**.",
+      "ground_truth_chunks": [
+        "/unified/proxy",
+        "PreconditionFailedResponse"
+      ],
+      "required_keywords": [
+        "/unified/proxy",
+        "412",
+        "PreconditionFailedResponse",
+        "linked account",
+        "disabled integration"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_stackone_s2_001",
+      "question": "When calling the StackOne MCP POST endpoint at `/mcp`, what header or query parameter must you provide to identify the target provider account, and which JSON-RPC fields are required in the `JsonRpcMessageDto` body?",
+      "category": "factual",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "For the MCP POST endpoint at `/mcp`, you can identify the target provider account using the `x-account-id` header or, alternatively, the `x-account-id` query parameter. In the `JsonRpcMessageDto` request body, the required JSON-RPC fields are `jsonrpc` and `method`; `params` and `id` are optional.",
+      "ground_truth_chunks": [
+        "/mcp",
+        "JsonRpcMessageDto"
+      ],
+      "required_keywords": [
+        "/mcp",
+        "x-account-id",
+        "JsonRpcMessageDto",
+        "jsonrpc",
+        "method"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_stackone_s0_001",
+      "question": "Which STACKONE API endpoint should I call to retrieve a paginated list of request logs, including optional step-level request details via the `include=step_logs` query parameter, and what is the corresponding operationId?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "You should use the **GET `/requests/logs`** endpoint. This endpoint supports an optional `include` query parameter where you can pass `step_logs` to include step-level request details in the response. The corresponding operationId is **`stackone_list_logs`**.",
+      "ground_truth_chunks": [
+        "/requests/logs",
+        "UnifiedLogsPaginated"
+      ],
+      "required_keywords": [
+        "GET `/requests/logs`",
+        "include",
+        "step_logs",
+        "operationId",
+        "stackone_list_logs"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_stackone_s1_001",
+      "question": "Which endpoint should I call to proxy a request to a downstream provider when I already have an account identifier, and what required header must I include?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "Use the POST /unified/proxy endpoint. You must include the x-account-id header (type: string, required: true) containing the account identifier, and provide the request body matching the ProxyRequestBody schema.",
+      "ground_truth_chunks": [
+        "/unified/proxy",
+        "ProxyResponseApiModel"
+      ],
+      "required_keywords": [
+        "POST /unified/proxy",
+        "x-account-id",
+        "header",
+        "account identifier"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "endpoint_stackone_s2_001",
+      "question": "Which StackOne endpoint should I call to list paginated platform-level request logs, and what query parameter object can I use to filter by `categories` and `status_codes`?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "Use the GET `/requests/platform-logs` endpoint to list paginated platform-level request logs. This endpoint supports a `filter` query parameter whose schema includes fields such as `categories` and `status_codes`:\n\n- Endpoint: `GET https://api.stackone.com/requests/platform-logs`\n- Query parameter: `filter` (object) with properties including:\n  - `categories`: \"A comma-separated list of categories to filter the results by.\" Example: `\"hris,ats\"`.\n  - `status_codes`: \"A comma-separated list of status codes to filter the results by.\" Example: `\"200,400\"`.\n\nThe response body is a `PlatformLogsPaginated` object containing a `data` array of `PlatformLog` records and an optional `next` cursor for pagination.",
+      "ground_truth_chunks": [
+        "/requests/platform-logs",
+        "PlatformLogsPaginated",
+        "PlatformLog"
+      ],
+      "required_keywords": [
+        "GET /requests/platform-logs",
+        "filter",
+        "categories",
+        "status_codes",
+        "PlatformLogsPaginated"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_stackone_s0_001",
+      "question": "When creating a connect session via POST `/connect_sessions`, which fields in the `ConnectSessionCreate` request body are required, and what are the allowed enum values for the `type` property?",
+      "category": "schema",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "The POST `/connect_sessions` endpoint expects a JSON body following the `ConnectSessionCreate` schema.\n\nRequired fields:\n- `origin_owner_id` (string) \u2014 described as \"The origin owner identifier\".\n- `origin_owner_name` (string) \u2014 described as \"The origin owner name\".\n\nThese two properties are listed under the `required` array of the `ConnectSessionCreate` schema:\n```json\n\"required\": [\n  \"origin_owner_id\",\n  \"origin_owner_name\"\n]\n```\n\nAllowed enum values for the `type` property in `ConnectSessionCreate`:\n- `\"production\"`\n- `\"test\"`\n- `null` (since the property is nullable and `null` is in the enum)\n\nAdditional details about `type`:\n- It is a string.\n- It has the description: \"The connect session account type\".\n- It has an example of `[\"PRODUCTION\", \"TEST\"]`.\n- It has a default value of `\"production\"`.\n- It allows unknown values (`\"x-speakeasy-unknown-values\": \"allow\"`).",
+      "ground_truth_chunks": [
+        "/connect_sessions",
+        "ConnectSessionCreate"
+      ],
+      "required_keywords": [
+        "origin_owner_id",
+        "origin_owner_name",
+        "ConnectSessionCreate",
+        "type",
+        "production",
+        "test",
+        "required"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "schema_stackone_s1_001",
+      "question": "For the POST `/unified/proxy` endpoint, what is the structure of the `ProxyRequestBody` request object, including the allowed values for the `method` field, and which of its properties are nullable?",
+      "category": "schema",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "The POST `/unified/proxy` endpoint consumes an `application/json` body whose schema is `ProxyRequestBody`.\n\n`ProxyRequestBody` is an object with the following properties:\n- `url`: string, description \"The base url of the request\", example `\"https://api.sample-integration.com/v1\"`, **nullable: true**.\n- `method`: string, description \"The method of the request\". It has an enum of allowed values: `\"get\"`, `\"post\"`, `\"put\"`, `\"delete\"`, `\"patch\"`, and `null`. It has default value `\"get\"`, is **nullable: true**, and has `x-speakeasy-unknown-values: \"allow\"`.\n- `path`: string, description \"The path of the request including any query parameters\", example `\"/employees/directory\"`, **nullable: true**.\n- `headers`: object, description \"The headers to send in the request\", `additionalProperties: true`, example `{ \"Content-Type\": \"application/json\" }`, **nullable: true**.\n- `body`: object, description \"The body of the request\", `additionalProperties: true`, **nullable: true**.\n\nNo required array is specified on the schema, so all properties are optional; all properties except `method` explicitly specify `nullable: true`, and `method` is also nullable through its enum including `null` and `nullable: true` on the field itself.",
+      "ground_truth_chunks": [
+        "/unified/proxy",
+        "ProxyRequestBody"
+      ],
+      "required_keywords": [
+        "ProxyRequestBody",
+        "method",
+        "enum",
+        "get",
+        "post",
+        "put",
+        "delete",
+        "patch",
+        "nullable"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_stackone_s2_001",
+      "question": "For the StackOne Proxy Request endpoint, what is the allowed set of values for the `method` field in the `ProxyRequestBody` schema, and what is its default value?",
+      "category": "schema",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "The `/unified/proxy` endpoint accepts a JSON body defined by the `ProxyRequestBody` schema. In that schema, the `method` field:\n\n- Is a string with an enum of the following allowed values: `\"get\"`, `\"post\"`, `\"put\"`, `\"delete\"`, `\"patch\"`, and `null`.\n- Has a default value of `\"get\"`.\n\nSo the allowed `method` values are `get`, `post`, `put`, `delete`, `patch` (plus `null`), and if not specified it defaults to `get`.",
+      "ground_truth_chunks": [
+        "/unified/proxy",
+        "ProxyRequestBody"
+      ],
+      "required_keywords": [
+        "ProxyRequestBody",
+        "method",
+        "enum",
+        "get",
+        "post",
+        "put",
+        "delete",
+        "patch",
+        "default"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "auth_stackone_001",
+      "question": "When calling the `/unified/proxy` endpoint in the STACKONE API, which authentication scheme is used and which header is required to identify the target account? Include the exact header name and auth scheme in your answer.",
+      "category": "auth",
+      "relevant_apis": [
+        "stackone"
+      ],
+      "ground_truth_answer": "The `/unified/proxy` endpoint uses HTTP Basic authentication (security scheme `basic`). In addition, every request must include the `x-account-id` header, which is required and carries the account identifier for the proxied call.",
+      "ground_truth_chunks": [
+        "/unified/proxy",
+        "/components/securitySchemes/basic"
+      ],
+      "required_keywords": [
+        "basic",
+        "HTTP",
+        "x-account-id",
+        "header",
+        "account identifier"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "factual_hris_s0_001",
+      "question": "When listing time off policies using the `/unified/hris/time_off_policies` endpoint, which filter parameter can you use to restrict results to a specific policy type, and what are two example values it supports?",
+      "category": "factual",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "The `/unified/hris/time_off_policies` GET endpoint supports a `filter[type]` query parameter to filter policies by type. Two example allowed values for this parameter are `\"sick\"` and `\"vacation\"` (others include options like `\"holiday\"`, `\"bereavement\"`, etc.).",
+      "ground_truth_chunks": [
+        "/unified/hris/time_off_policies",
+        "TimeOffPolicies"
+      ],
+      "required_keywords": [
+        "filter[type]",
+        "sick",
+        "vacation",
+        "/unified/hris/time_off_policies"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_hris_s1_001",
+      "question": "For the `GET /unified/hris/employees/{id}/time_off_policies` endpoint, which filter field allows you to restrict results to specific types of time-off policies, and list at least five valid enum values for that field as defined in the spec.",
+      "category": "factual",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "In the `GET /unified/hris/employees/{id}/time_off_policies` endpoint, the filter field used to restrict results by time-off policy type is `filter[type]`.\n\nThis field is documented in the `filter` deepObject schema under the `type` property, which is an enum. At least five valid enum values for this field are:\n- `sick`\n- `vacation`\n- `annual_leave`\n- `maternity_leave`\n- `holiday`\n\nAdditional valid enum values include `unmapped_value`, `long_term_disability`, `short_term_disability`, `absent`, `comp_time`, `training`, `leave_of_absence`, `break`, `child_care_leave`, `jury_duty`, `sabbatical`, `accident`, `paid`, `unpaid`, `personal`, `in_lieu`, `bereavement`, `other`, and `null`.",
+      "ground_truth_chunks": [
+        "/unified/hris/employees/{id}/time_off_policies",
+        "TimeOffPolicyTypeEnum"
+      ],
+      "required_keywords": [
+        "filter[type]",
+        "time_off_policies",
+        "enum",
+        "sick",
+        "vacation",
+        "annual_leave",
+        "maternity_leave",
+        "holiday"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_hris_s2_001",
+      "question": "When listing HRIS time entries via GET /unified/hris/time_entries, which filter fields are available in the filter query parameter object, and what does each of them select or restrict?",
+      "category": "factual",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "For GET /unified/hris/time_entries, the filter query parameter is an object that supports the following fields:\n\n- **updated_after**: A date-time string (e.g. \"2020-01-01T00:00:00.000Z\") used \"to only select results updated after that given date\".\n- **employee_id**: A string used to \"filter to select time entries by employee_id\".\n- **start_time**: A date-time string (e.g. \"2020-01-01T00:00:00.000Z\") used to \"filter to select time entries after a given time\".\n- **end_time**: A date-time string (e.g. \"2020-01-01T00:00:00.000Z\") used to \"filter to select time entries before a given time\".\n\nThese four properties are all defined under the filter object for the /unified/hris/time_entries GET endpoint.",
+      "ground_truth_chunks": [
+        "/unified/hris/time_entries"
+      ],
+      "required_keywords": [
+        "filter",
+        "updated_after",
+        "employee_id",
+        "start_time",
+        "end_time",
+        "/unified/hris/time_entries"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_hris_s0_001",
+      "question": "Which endpoint should I use to list all time off policies assigned to a specific employee, and what query parameter lets me filter those policies by their type (for example, `sick` or `vacation`)?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "Use the `GET /unified/hris/employees/{id}/time_off_policies` endpoint to list all time off policies assigned to a specific employee. To filter those policies by type (such as `sick` or `vacation`), use the `filter[type]` query parameter, which accepts values from the documented time off policy type enum (e.g., `sick`, `vacation`, `holiday`, etc.).",
+      "ground_truth_chunks": [
+        "/unified/hris/employees/{id}/time_off_policies",
+        "TimeOffPoliciesPaginated"
+      ],
+      "required_keywords": [
+        "GET /unified/hris/employees/{id}/time_off_policies",
+        "filter[type]",
+        "type",
+        "time off policies"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_hris_s1_001",
+      "question": "Which endpoint should I call to retrieve all work eligibility records for a specific employee, and what required parameters do I need to include?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "Use the GET /unified/hris/employees/{id}/work_eligibility endpoint to list work eligibility records for a specific employee.\n\nRequired request components:\n- Path parameter:\n  - id (string) \u2013 the employee identifier whose work eligibility you want to list\n- Header:\n  - x-account-id (string) \u2013 the account identifier\n\nOptional query parameters include raw (boolean), proxy (object, deepObject), fields (comma\u2011separated string of fields, e.g. \"id,remote_id,type,sub_type,document,valid_from,valid_to,issued_by,number,unified_custom_fields\"), filter.updated_after, page (deprecated), page_size, next, and updated_after (deprecated).",
+      "ground_truth_chunks": [
+        "/unified/hris/employees/{id}/work_eligibility",
+        "WorkEligibilityPaginated",
+        "WorkEligibility"
+      ],
+      "required_keywords": [
+        "GET /unified/hris/employees/{id}/work_eligibility",
+        "id",
+        "x-account-id",
+        "work eligibility"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_hris_s2_001",
+      "question": "Which endpoint should I use to create a time off request for a specific employee, and what HTTP method does it require?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "To create a time off request for a specific employee, you should call the `POST /unified/hris/employees/{id}/time_off` endpoint.\n\n- **HTTP method**: `POST`\n- **Path**: `/unified/hris/employees/{id}/time_off`\n- **Summary in spec**: \"Create Employee Time Off Request\"",
+      "ground_truth_chunks": [
+        "/unified/hris/employees/{id}/time_off"
+      ],
+      "required_keywords": [
+        "POST",
+        "/unified/hris/employees/{id}/time_off",
+        "Create Employee Time Off Request"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "schema_hris_s0_001",
+      "question": "In the HRIS API, what are all the properties and their meanings defined on the `Employment` schema that describe an employee\u2019s compensation terms (such as rate, period, frequency, and currency), and which of these properties reference enumeration schemas?",
+      "category": "schema",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "The `Employment` schema defines several properties that describe an employee\u2019s compensation terms:\n\n1. `pay_rate`\n- **Type:** string\n- **Description:** \"The amount of compensation for the employee\"\n- **Example:** \"40.00\"\n- **Nullable:** true\n- **Notes:** This is the numeric rate value itself as text. It does not reference an enum.\n\n2. `pay_period`\n- **Description:** \"The time period over which the pay rate is calculated\"\n- **Example:** \"monthly\"\n- **Nullable:** true\n- **Schema:** `allOf` \u2192 `PayPeriodEnum`\n- **Enum reference:** Yes, this field references the `PayPeriodEnum` schema, which encapsulates the allowed period values.\n\n3. `pay_frequency`\n- **Description:** \"How often the employee is paid\"\n- **Example:** \"hourly\"\n- **Nullable:** true\n- **Schema:** `allOf` \u2192 `PayFrequencyEnum`\n- **Enum reference:** Yes, this field references the `PayFrequencyEnum` schema, which defines an object with a `value` string and a `source_value`. The `value` in `PayFrequencyEnum` can be one of:\n  - `\"hourly\"`, `\"weekly\"`, `\"bi_weekly\"`, `\"four_weekly\"`, `\"semi_monthly\"`, `\"monthly\"`, `\"bi_monthly\"`, `\"quarterly\"`, `\"semi_annually\"`, `\"yearly\"`, `\"thirteen_monthly\"`, `\"pro_rata\"`, `\"unmapped_value\"`, `\"half_yearly\"`, `\"daily\"`, `\"fixed\"`, or `null`.\n\n4. `pay_currency`\n- **Type:** string\n- **Description:** \"The currency used for pay\"\n- **Example:** \"USD\"\n- **Nullable:** true\n- **Notes:** This is a free-form currency code string and does *not* reference an enum schema.\n\nAmong these compensation-related fields, `pay_period` and `pay_frequency` are the ones that reference enumeration schemas (`PayPeriodEnum` and `PayFrequencyEnum` respectively). `pay_rate` and `pay_currency` are simple string fields and do not reference enums.",
+      "ground_truth_chunks": [
+        "Employment",
+        "PayFrequencyEnum"
+      ],
+      "required_keywords": [
+        "Employment",
+        "pay_rate",
+        "pay_period",
+        "pay_frequency",
+        "pay_currency",
+        "PayFrequencyEnum"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_hris_s1_001",
+      "question": "For the `/unified/hris/employees/{id}/shifts` GET endpoint, what filter fields are available inside the `filter` query parameter object, and what are the allowed enum values for the `status` filter?",
+      "category": "schema",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "The `/unified/hris/employees/{id}/shifts` GET endpoint defines a `filter` query parameter as a deepObject with the following properties:\n\n- `updated_after`: a string in `date-time` format (example: `\"2020-01-01T00:00:00.000Z\"`), used to select results updated after the given date.\n- `status`: a string field used to filter shifts by status, with the following allowed enum values: `\"draft\"`, `\"published\"`, `\"confirmed\"`, `\"cancelled\"`, and `\"unmapped_value\"`.\n- `starts_after`: a string in `datetime-local` format (example: `\"2024-01-15T09:00\"`), used to filter shifts that start after the specified date/time.\n- `ends_before`: a string in `datetime-local` format (example: `\"2024-01-15T17:00\"`), used to filter shifts that end before the specified date/time.\n\nSo the available filter fields are `updated_after`, `status`, `starts_after`, and `ends_before`, and the `status` filter accepts exactly the enum values `draft`, `published`, `confirmed`, `cancelled`, and `unmapped_value`.",
+      "ground_truth_chunks": [
+        "/unified/hris/employees/{id}/shifts"
+      ],
+      "required_keywords": [
+        "filter",
+        "status",
+        "updated_after",
+        "starts_after",
+        "ends_before",
+        "draft",
+        "published",
+        "confirmed",
+        "cancelled",
+        "unmapped_value"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_hris_s2_001",
+      "question": "In the `HrisBatchDocumentUploadRequestDto` schema used by the `POST /unified/hris/employees/{id}/documents/upload/batch` endpoint, which field is required and what is its type and item schema?",
+      "category": "schema",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "The `HrisBatchDocumentUploadRequestDto` schema has a single required field named `items`. It is a non-nullable array (`type: array`, `nullable: false`) and each element in the array must conform to the `HrisDocumentsUploadRequestDto` schema (i.e., `items.items.$ref: #/components/schemas/HrisDocumentsUploadRequestDto`). The `items` field is listed in the `required` array for this schema.",
+      "ground_truth_chunks": [
+        "HrisBatchDocumentUploadRequestDto",
+        "/unified/hris/employees/{id}/documents/upload/batch"
+      ],
+      "required_keywords": [
+        "HrisBatchDocumentUploadRequestDto",
+        "items",
+        "required",
+        "array",
+        "HrisDocumentsUploadRequestDto"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "auth_hris_001",
+      "question": "When calling the `GET /unified/hris/employments` endpoint, what authentication scheme and required header must you include to successfully authenticate the request?",
+      "category": "auth",
+      "relevant_apis": [
+        "hris"
+      ],
+      "ground_truth_answer": "To call `GET /unified/hris/employments`, you must authenticate using HTTP Basic authentication (the `basic` security scheme) and include the `x-account-id` header with the account identifier. The header is required and must be a string.",
+      "ground_truth_chunks": [
+        "/unified/hris/employments",
+        "components/securitySchemes/basic"
+      ],
+      "required_keywords": [
+        "HTTP Basic",
+        "basic",
+        "x-account-id",
+        "header",
+        "required"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "factual_ats_s0_001",
+      "question": "When listing ATS job postings via `GET /unified/ats/job_postings`, which query parameter should you use to only return job postings created after a specific date, and what date-time format must that filter value follow?",
+      "category": "factual",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "You should use the `filter[created_after]` query parameter on `GET /unified/ats/job_postings`, and its value must be a string in `date-time` format (for example, an ISO 8601 timestamp like `2020-01-01T00:00:00.000Z`).",
+      "ground_truth_chunks": [
+        "/unified/ats/job_postings",
+        "JobPostingsPaginated"
+      ],
+      "required_keywords": [
+        "filter",
+        "created_after",
+        "date-time",
+        "2020-01-01T00:00:00.000Z"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_ats_s1_001",
+      "question": "For the ATS List Offers endpoint, which query parameter is marked as deprecated for selecting only updated results, and what is its name exactly as defined in the spec?",
+      "category": "factual",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "In the List Offers endpoint (`GET /unified/ats/offers`), the query parameter used to select only updated results that is marked as deprecated is named `sync_token`.",
+      "ground_truth_chunks": [
+        "/unified/ats/offers"
+      ],
+      "required_keywords": [
+        "/unified/ats/offers",
+        "sync_token",
+        "deprecated"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_ats_s2_001",
+      "question": "When listing ATS users via the `/unified/ats/users` endpoint, which query parameter is marked as deprecated for paginating by page number, and what is its type?",
+      "category": "factual",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "In the `/unified/ats/users` GET endpoint, the `page` query parameter is deprecated and its type is a nullable string (`type: string`, `nullable: true`).",
+      "ground_truth_chunks": [
+        "/unified/ats/users"
+      ],
+      "required_keywords": [
+        "/unified/ats/users",
+        "page",
+        "deprecated",
+        "type",
+        "string",
+        "nullable"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_ats_s0_001",
+      "question": "Which ATS endpoint should I use to retrieve a paginated list of interviews, and what query parameters can I use to filter by `created_after` and control pagination?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "Use the `GET /unified/ats/interviews` endpoint to retrieve a paginated list of interviews.\n\nEndpoint:\n- `GET https://api.stackone.com/unified/ats/interviews`\n\nKey query parameters:\n- `filter[created_after]` (in `filter` deepObject):\n  - Described under the `filter` parameter (ATS Interviews Filter)\n  - `created_after`: \"Use a string with a date to only select results created after that given date\" (format: date-time, example `2020-01-01T00:00:00.000Z`).\n- Pagination controls:\n  - `page_size` (string, optional): \"The number of results per page (default value is 25)\".\n  - `next` (string, optional): \"The unified cursor\"; this is also wired into `x-speakeasy-pagination` where `outputs.nextCursor` is `$.next`.\n\nOther useful parameters (optional):\n- `raw` (boolean) to include provider raw response.\n- `proxy` (deepObject) to pass through provider-specific query parameters.\n- `fields` (string) to specify which interview fields to return.\n- `filter[updated_after]` for updated-after filtering.\n\nAuthentication:\n- Requires HTTP basic auth and the `x-account-id` header.",
+      "ground_truth_chunks": [
+        "/unified/ats/interviews",
+        "InterviewsPaginated"
+      ],
+      "required_keywords": [
+        "GET /unified/ats/interviews",
+        "filter",
+        "created_after",
+        "page_size",
+        "next",
+        "x-account-id",
+        "ATS Interviews Filter"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_ats_s1_001",
+      "question": "Which endpoint should I use to retrieve a paginated list of notes associated with a specific application, and what required header and path parameter must I include?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "Use the `GET /unified/ats/applications/{id}/notes` endpoint.\n\nRequired inputs:\n- Header: `x-account-id` (string, required) \u2014 the account identifier\n- Path parameter: `id` (string, required) \u2014 the identifier of the application whose notes you want to list\n\nThis endpoint returns a paginated list of notes in a `NotesPaginated` response object and supports optional query parameters such as `raw`, `proxy`, `fields`, `filter[updated_after]`, `page`, `page_size`, `next`, `updated_after` (deprecated), and `sync_token` (deprecated).",
+      "ground_truth_chunks": [
+        "/unified/ats/applications/{id}/notes",
+        "NotesPaginated"
+      ],
+      "required_keywords": [
+        "GET /unified/ats/applications/{id}/notes",
+        "x-account-id",
+        "id",
+        "NotesPaginated"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "endpoint_ats_s2_001",
+      "question": "Which ATS endpoint should I use to upload a base64-encoded resume file as a document for an existing application, and what request body schema does it require?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "Use the POST endpoint `POST /unified/ats/applications/{id}/documents/upload` to upload a document for an existing application. It requires a JSON request body with schema `AtsDocumentsUploadRequestDto`. This schema includes fields such as `name` (filename), `file_format` (using `FileFormatEnum`), `content` (the base64-encoded file contents), `category_id`, `path`, `confidential` (using `ConfidentialEnumApiModel`), and `category` (using `AtsDocumentsUploadCategoryEnumApiModel`).",
+      "ground_truth_chunks": [
+        "/unified/ats/applications/{id}/documents/upload",
+        "AtsDocumentsUploadRequestDto"
+      ],
+      "required_keywords": [
+        "POST /unified/ats/applications/{id}/documents/upload",
+        "AtsDocumentsUploadRequestDto",
+        "base64",
+        "content"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_ats_s0_001",
+      "question": "In the ATS API, what are the properties and required fields included in the `BadRequestResponse` schema, and what additional error detail collections can it optionally return?",
+      "category": "schema",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "The `BadRequestResponse` schema is an object with the following properties:\n\n- `statusCode` (number): HTTP status code. Example: 400. **Required**.\n- `message` (string): Error message. Example: \"Bad Request\". **Required**.\n- `timestamp` (string, format: date-time): Timestamp when the error occurred. Example: \"2023-05-30T00:00:00.000Z\". **Required**.\n- `data` (nullable, allOf `UnifiedError`): Error details. Optional.\n- `provider_errors` (nullable array of `ProviderError`): List of provider-specific errors. Optional.\n\nThe required fields for `BadRequestResponse` are `statusCode`, `message`, and `timestamp`. The schema can additionally (optionally) include a `data` object with unified error details and a `provider_errors` array for provider-specific errors.",
+      "ground_truth_chunks": [
+        "BadRequestResponse"
+      ],
+      "required_keywords": [
+        "BadRequestResponse",
+        "statusCode",
+        "message",
+        "timestamp",
+        "data",
+        "provider_errors",
+        "UnifiedError",
+        "ProviderError"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_ats_s1_001",
+      "question": "In the `AtsUpdateCandidateRequestDto` request body used by the `PATCH /unified/ats/candidates/{id}` endpoint, which fields are available to update a candidate\u2019s contact and employment details (e.g., name, emails, phone_numbers, company, title, country, hired_at), and which of these are marked as deprecated or nullable?",
+      "category": "schema",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "The `PATCH /unified/ats/candidates/{id}` endpoint uses the `AtsUpdateCandidateRequestDto` schema as its JSON request body. This schema defines multiple updatable candidate properties related to contact and employment details:\n\n- `name`\n  - Type: string\n  - Description: Candidate name\n  - Example: `\"Romain Sestier\"`\n  - Nullable: true\n\n- `first_name`\n  - Type: string\n  - Description: Candidate first name\n  - Example: `\"Romain\"`\n  - Nullable: true\n\n- `last_name`\n  - Type: string\n  - Description: Candidate last name\n  - Example: `\"Sestier\"`\n  - Nullable: true\n\n- `email`\n  - Type: string\n  - Description: Candidate email\n  - Example: `\"sestier.romain123@gmail.com\"`\n  - Nullable: true\n\n- `emails`\n  - Type: array of `CandidateEmail`\n  - Description: List of candidate emails\n  - Nullable: true\n\n- `social_links`\n  - Type: array of `SocialLink`\n  - Description: List of candidate social links\n  - Nullable: true\n\n- `phone`\n  - Type: string\n  - Description: Candidate phone number\n  - Example: `\"+16178294093\"`\n  - Deprecated: true\n  - Nullable: true\n\n- `phone_numbers`\n  - Type: array of `PhoneNumber`\n  - Description: List of candidate phone numbers including the type of the number when available\n  - Nullable: true\n\n- `company`\n  - Type: string\n  - Description: Candidate company\n  - Example: `\"Company Inc.\"`\n  - Nullable: true\n\n- `title`\n  - Type: string\n  - Description: Candidate title\n  - Example: `\"Software Engineer\"`\n  - Nullable: true\n\n- `country`\n  - Type: string\n  - Description: Candidate country\n  - Example: `\"United States\"`\n  - Nullable: true\n\n- `hired_at`\n  - Type: string (date-time)\n  - Description: Candidate hired date\n  - Example: `\"2021-01-01T01:01:01.000Z\"`\n  - Nullable: true\n\nAll of these fields are nullable, allowing them to be omitted or set to null in the update payload. Among the listed properties, only `phone` is explicitly marked as deprecated.",
+      "ground_truth_chunks": [
+        "/unified/ats/candidates/{id}",
+        "AtsUpdateCandidateRequestDto"
+      ],
+      "required_keywords": [
+        "AtsUpdateCandidateRequestDto",
+        "PATCH /unified/ats/candidates/{id}",
+        "phone_numbers",
+        "phone",
+        "nullable",
+        "deprecated",
+        "company",
+        "title",
+        "country",
+        "hired_at"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_ats_s2_001",
+      "question": "In the `AtsUpdateBackgroundCheckResultRequestDto` schema used by the `PATCH /unified/ats/background_checks/orders/{id}/result` endpoint, which fields are available to describe the outcome of a background check (including any nested types), and what are their data types and purposes?",
+      "category": "schema",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "The `AtsUpdateBackgroundCheckResultRequestDto` schema defines the body for updating a background check result and contains these fields:\n\n- `score`: An object (nullable) referencing `ScoreApiModel`. It represents the candidate\u2019s score for the background check/test. The exact structure is defined in the `ScoreApiModel` schema (not fully expanded here), but within `AtsUpdateBackgroundCheckResultRequestDto` it is a nested object used to convey scoring details.\n\n- `start_date`: A string, format `date-time`, nullable. It is described as \"The start date of the candidate test\" and holds the timestamp when the candidate\u2019s test/background check started.\n\n- `submission_date`: A string, format `date-time`, nullable. It is described as \"The submission date of the candidate test\" and holds the timestamp when the candidate\u2019s test/background check was submitted or completed.\n\n- `summary`: A string, nullable. It is described as \"The summary about the result of the test\" and is used for a human-readable summary of the background check/test outcome (e.g., \"Test is passed\").\n\n- `result`: An object (nullable) referencing `ResultEnum`. This is an enum-like structure (backed by `ResultEnum`) representing the overall result of the background check, such as passed/failed-type statuses. In this schema it appears as a nested object field describing the outcome classification.\n\n- `result_url`: A string, nullable. It is described as \"The test`s result url\" and contains a URL where a consumer can view the full background check/test result (for example `https://exmaple.com/result?id=xyz`).\n\n- `attachments`: An array of `Attachment` objects, nullable. This field is described as containing \"attachments\" and is used to include additional files related to the background check result (such as PDFs, text, or other documents). Each element of the array is an `Attachment` object (structure defined separately in the `Attachment` schema).\n\n- `candidate`: An object (nullable) referencing `UpdateResultCandidateApiModel`. This nested object carries candidate-specific information associated with this background check result; its exact structure is defined in `UpdateResultCandidateApiModel`.\n\n- `passthrough`: An object, nullable, with `additionalProperties: true`. It is described as \"Value to pass through to the provider\" and is used to send arbitrary provider-specific key\u2013value data. The example shows `{ \"other_known_names\": \"John Doe\" }`.\n\nNone of the fields in `AtsUpdateBackgroundCheckResultRequestDto` are marked as required in the provided definition; all are optional/nullable fields used to describe some aspect of the background check outcome, timing, summary, linked candidate, or provider-specific data.",
+      "ground_truth_chunks": [
+        "AtsUpdateBackgroundCheckResultRequestDto",
+        "/unified/ats/background_checks/orders/{id}/result"
+      ],
+      "required_keywords": [
+        "AtsUpdateBackgroundCheckResultRequestDto",
+        "score",
+        "start_date",
+        "submission_date",
+        "summary",
+        "result",
+        "result_url",
+        "attachments",
+        "candidate",
+        "passthrough",
+        "ResultEnum",
+        "ScoreApiModel"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "auth_ats_001",
+      "question": "When calling the ATS \"Get Application\" endpoint at `/unified/ats/applications/{id}`, what authentication scheme must be used and which required header must be included for the request to succeed?",
+      "category": "auth",
+      "relevant_apis": [
+        "ats"
+      ],
+      "ground_truth_answer": "The \"Get Application\" endpoint at `/unified/ats/applications/{id}` requires HTTP Basic authentication, as indicated by the `security` section specifying the `basic` scheme. In addition to providing valid Basic Auth credentials, the request must include the `x-account-id` header, which is a required string header representing the account identifier.",
+      "ground_truth_chunks": [
+        "/unified/ats/applications/{id}"
+      ],
+      "required_keywords": [
+        "HTTP Basic",
+        "basic",
+        "x-account-id",
+        "header"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "factual_lms_s0_001",
+      "question": "When creating a user assignment via POST /unified/lms/users/{id}/assignments, which field in the LmsCreateAssignmentRequestDto is mandatory, and what does it represent?",
+      "category": "factual",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "The only mandatory field is learning_object_external_reference. It represents the external reference (main identifier) of the learning object associated with the assignment and is the primary identifier used for creating assignments.",
+      "ground_truth_chunks": [
+        "LmsCreateAssignmentRequestDto",
+        "/unified/lms/users/{id}/assignments"
+      ],
+      "required_keywords": [
+        "learning_object_external_reference",
+        "LmsCreateAssignmentRequestDto",
+        "Create User Assignment"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_lms_s1_001",
+      "question": "When creating a user assignment via POST `/unified/lms/users/{id}/assignments`, which field in `LmsCreateAssignmentRequestDto` is the primary required identifier for the learning object, and is `external_reference` required for this operation?",
+      "category": "factual",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "For POST `/unified/lms/users/{id}/assignments`, the primary required identifier for the learning object is the `learning_object_external_reference` field in `LmsCreateAssignmentRequestDto`. It is the main identifier for creating assignments and is the only required property in that schema. The `external_reference` field is marked as deprecated and is not required for creating the assignment.",
+      "ground_truth_chunks": [
+        "/unified/lms/users/{id}/assignments",
+        "LmsCreateAssignmentRequestDto"
+      ],
+      "required_keywords": [
+        "learning_object_external_reference",
+        "external_reference",
+        "required",
+        "deprecated",
+        "LmsCreateAssignmentRequestDto"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_lms_s2_001",
+      "question": "When using the `GET /unified/lms/courses` endpoint, which filter value(s) are allowed for the `active` filter, and in which OpenAPI type(s) are they represented?",
+      "category": "factual",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "For `GET /unified/lms/courses`, the `filter.active` parameter only allows a value of logical `true`, represented as either a boolean or a string:\n- As a boolean: `true`\n- As a string: `\"true\"`\n\nThese are defined in the schema as a `oneOf` of:\n- `{ \"type\": \"boolean\", \"const\": true }`\n- `{ \"type\": \"string\", \"const\": \"true\" }`",
+      "ground_truth_chunks": [
+        "/unified/lms/courses"
+      ],
+      "required_keywords": [
+        "filter",
+        "active",
+        "boolean",
+        "\"true\"",
+        "oneOf"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_lms_s0_001",
+      "question": "Which endpoint should I use to retrieve a paginated list of assignment learning records for a specific user, and which query parameter lets me filter those assignments by status (e.g., pending, in_progress, completed)?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "Use the GET endpoint:\n\n- **Endpoint:** `GET /unified/lms/users/{id}/assignments`\n  - `id` (path) is the user identifier.\n\nThis endpoint returns a paginated list of assignment type learning records for that user.\n\nTo filter the assignments by status, use the **`filter[status]`** field inside the `filter` deepObject query parameter (documented under the `filter` schema on this endpoint). The `status` value must be one of:\n- `pending`\n- `in_progress`\n- `completed`\n- `unmapped_value`\n- `null`",
+      "ground_truth_chunks": [
+        "/unified/lms/users/{id}/assignments",
+        "AssignmentsPaginated",
+        "AssignmentStatusEnum"
+      ],
+      "required_keywords": [
+        "GET /unified/lms/users/{id}/assignments",
+        "filter",
+        "status",
+        "pending",
+        "in_progress",
+        "completed"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_lms_s1_001",
+      "question": "Which LMS API endpoint should I use to batch upsert multiple external linking learning objects, and what HTTP method is required?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "Use the POST method on the `/unified/lms/content/batch` endpoint. This endpoint is documented as \"Batch Upsert External Linking Learning Objects\" and accepts a JSON body of type `LmsBatchUpsertContentRequestDto`.",
+      "ground_truth_chunks": [
+        "/unified/lms/content/batch",
+        "LmsBatchUpsertContentRequestDto"
+      ],
+      "required_keywords": [
+        "POST",
+        "/unified/lms/content/batch",
+        "Batch Upsert External Linking Learning Objects"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "endpoint_lms_s2_001",
+      "question": "Which LMS API endpoint should I call to create a new completed learning record for a specific user, and what HTTP method and required path/header parameters does it use?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "To create a new completed learning record for a specific user, you should call the `POST /unified/lms/users/{id}/completions` endpoint.\n\nDetails:\n- **HTTP method:** `POST`\n- **Path:** `/unified/lms/users/{id}/completions`\n- **Required path parameter:**\n  - `id` (in `path`): the user identifier (`type: string`, `required: true`)\n- **Required header parameter:**\n  - `x-account-id` (in `header`): the account identifier (`type: string`, `required: true`)\n- **Request body:** `application/json` with schema `LmsCreateCompletionRequestDto`\n\nThis operation is summarized in the spec as **\"Create User Completion\"** and its `operationId` is `lms_create_user_completion`.",
+      "ground_truth_chunks": [
+        "/unified/lms/users/{id}/completions",
+        "LmsCreateCompletionRequestDto"
+      ],
+      "required_keywords": [
+        "POST",
+        "/unified/lms/users/{id}/completions",
+        "Create User Completion",
+        "x-account-id",
+        "id",
+        "LmsCreateCompletionRequestDto"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "schema_lms_s0_001",
+      "question": "For the `LmsUpsertContentRequestDto` schema used by the `PUT /unified/lms/content` endpoint, which fields are required and what are the allowed value formats for the `languages` and `content_type` properties?",
+      "category": "schema",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "In the `LmsUpsertContentRequestDto` schema (used by `PUT /unified/lms/content`), there is exactly one required field: \n- `external_reference` (string): \"The external ID associated with this content\".\n\nAll other fields in this schema are optional/nullable.\n\nFor the `languages` property:\n- Type: array of `LanguageEnum` objects.\n- Each item is a `LanguageEnum` with:\n  - `value` (string, nullable) \u2013 must be one of the listed unified locale codes (e.g., `\"en_GB\"`, `\"en_US\"`, `\"fr_FR\"`, etc.), or `\"unmapped_value\"`, or `null`. The enum list is explicitly defined under `LanguageEnum.value`.\n  - `source_value` (string | number | boolean | object | array, nullable) \u2013 the original language code from the provider, used as a fallback when `value` is omitted or set to `\"unmapped_value\"`.\n\nFor the `content_type` property:\n- It is nullable and defined as an `allOf` reference to `WriteContentTypeEnum` (not fully expanded in the provided sample, but the spec shows it is an enum-like type used to indicate the type of content).\n- As per the schema line: `\"content_type\": { \"description\": \"The type of content\", \"nullable\": true, \"allOf\": [ { \"$ref\": \"#/components/schemas/WriteContentTypeEnum\" } ] }`, clients must supply a value from `WriteContentTypeEnum` (or omit it / set it null since it is nullable).",
+      "ground_truth_chunks": [
+        "/unified/lms/content",
+        "LmsUpsertContentRequestDto",
+        "LanguageEnum"
+      ],
+      "required_keywords": [
+        "LmsUpsertContentRequestDto",
+        "external_reference",
+        "required",
+        "languages",
+        "LanguageEnum",
+        "content_type",
+        "WriteContentTypeEnum"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_lms_s1_001",
+      "question": "When creating a new user assignment via POST /unified/lms/users/{id}/assignments, which request body fields in LmsCreateAssignmentRequestDto are required, and what is the allowed set of values for the assignment status field?",
+      "category": "schema",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "For POST /unified/lms/users/{id}/assignments, the request body uses the LmsCreateAssignmentRequestDto schema. In this schema, the only required field is:\n\n- learning_object_external_reference (string): \"The external reference of the learning object associated with this assignment, this is the main identifier for creating assignments.\"\n\nAll other fields in LmsCreateAssignmentRequestDto (passthrough, external_reference, learning_object_id, progress, assigned_at, due_date, status) are nullable and not required.\n\nThe status field is defined via AssignmentStatusEnum. Its value property is a string enum with the following allowed values:\n- \"pending\"\n- \"in_progress\"\n- \"completed\"\n- \"unmapped_value\"\n- null\n\nThe status object also has an optional source_value field that can be string, number, boolean, object, or array, representing the original provider status before normalization.",
+      "ground_truth_chunks": [
+        "/unified/lms/users/{id}/assignments",
+        "LmsCreateAssignmentRequestDto",
+        "AssignmentStatusEnum"
+      ],
+      "required_keywords": [
+        "LmsCreateAssignmentRequestDto",
+        "learning_object_external_reference",
+        "AssignmentStatusEnum",
+        "pending",
+        "in_progress",
+        "completed",
+        "unmapped_value"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_lms_s2_001",
+      "question": "For the LMS API, when creating a user assignment with POST `/unified/lms/users/{id}/assignments`, which fields in the `LmsCreateAssignmentRequestDto` request body are required, and what is the purpose of the `learning_object_external_reference` and the optional `passthrough` field?",
+      "category": "schema",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "The POST `/unified/lms/users/{id}/assignments` endpoint uses the `LmsCreateAssignmentRequestDto` schema as its JSON request body. In that schema, the only required field is:\n\n- `learning_object_external_reference` (type: string)\n  - Description: \"The external reference of the learning object associated with this assignment, this is the main identifier for creating assignments.\"\n  - It must be provided whenever you create an assignment.\n\nAll other properties in `LmsCreateAssignmentRequestDto` are optional, including:\n- `passthrough` (type: object, nullable)\n  - Description: \"Value to pass through to the provider\".\n  - It is an arbitrary key/value object (`additionalProperties: true`) whose contents are forwarded to the underlying provider. The example shows `{ \"other_known_names\": \"John Doe\" }`.\n\nOptional fields also include:\n- `external_reference` (string, deprecated)\n- `learning_object_id` (string)\n- `progress` (number)\n- `assigned_at` (string, date-time)\n- `due_date` (string, date-time)\n- `status` (AssignmentStatusEnum)\n\nBut none of these are required by the schema; only `learning_object_external_reference` is in the `required` list.",
+      "ground_truth_chunks": [
+        "/unified/lms/users/{id}/assignments",
+        "LmsCreateAssignmentRequestDto"
+      ],
+      "required_keywords": [
+        "LmsCreateAssignmentRequestDto",
+        "learning_object_external_reference",
+        "required",
+        "passthrough",
+        "Value to pass through to the provider",
+        "external_reference",
+        "assigned_at",
+        "due_date",
+        "status"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "auth_lms_001",
+      "question": "When calling any of the LMS endpoints such as `GET /unified/lms/content` or `GET /unified/lms/users/{id}`, what authentication scheme and required header must you include to successfully authorize the request?",
+      "category": "auth",
+      "relevant_apis": [
+        "lms"
+      ],
+      "ground_truth_answer": "All LMS endpoints in the provided spec use HTTP Basic authentication and require the `x-account-id` header.\n\nSpecifically:\n- Security: each operation lists `security: [{ \"basic\": [] }]`, which refers to the `basic` security scheme defined under `components.securitySchemes` as type `http` with `scheme: basic`.\n- Required header: each LMS operation (for example `GET /unified/lms/content`, `GET /unified/lms/users/{id}`, `GET /unified/lms/courses`, `GET /unified/lms/completions`) defines a required header parameter named `x-account-id` with description \"The account identifier\" and `required: true`.\n\nSo, to authorize a request you must:\n1. Authenticate using HTTP Basic auth (`basic` scheme), and\n2. Include the `x-account-id` header with your account identifier.",
+      "ground_truth_chunks": [
+        "/unified/lms/content",
+        "/unified/lms/users/{id}",
+        "/unified/lms/courses",
+        "/unified/lms/completions",
+        "components/securitySchemes/basic"
+      ],
+      "required_keywords": [
+        "HTTP Basic",
+        "basic",
+        "x-account-id",
+        "header",
+        "security"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "factual_iam_s0_001",
+      "question": "When listing IAM users with GET /unified/iam/users, which query parameter is marked as deprecated for selecting results updated after a given date, and what is the required format of its value?",
+      "category": "factual",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "The deprecated query parameter is `updated_after`, and its value must be a string in `date-time` format (for example, `2020-01-01T00:00:00.000Z`).",
+      "ground_truth_chunks": [
+        "/unified/iam/users",
+        "IamPoliciesPaginated"
+      ],
+      "required_keywords": [
+        "updated_after",
+        "deprecated",
+        "date-time",
+        "2020-01-01T00:00:00.000Z"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_iam_s1_001",
+      "question": "When listing IAM roles via GET /unified/iam/roles, which query parameter is marked as deprecated for pagination and what is its described purpose?",
+      "category": "factual",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "In GET /unified/iam/roles, the deprecated pagination query parameter is `page`, and its described purpose is \u201cThe page number of the results to fetch.\u201d",
+      "ground_truth_chunks": [
+        "/unified/iam/roles",
+        "IamRolesPaginated"
+      ],
+      "required_keywords": [
+        "page",
+        "deprecated",
+        "The page number of the results to fetch"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "factual_iam_s2_001",
+      "question": "When listing IAM users via GET /unified/iam/users, which query parameter is used for cursor-based pagination to request the next page of results, and what JSON field in the response contains the corresponding cursor value?",
+      "category": "factual",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "The GET /unified/iam/users endpoint uses the `next` query parameter as the cursor input for pagination, and the response contains the cursor in the `next` field of the `IamUsersPaginated` object.",
+      "ground_truth_chunks": [
+        "/unified/iam/users",
+        "IamUsersPaginated"
+      ],
+      "required_keywords": [
+        "next",
+        "cursor",
+        "IamUsersPaginated",
+        "query parameter",
+        "response field"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_iam_s0_001",
+      "question": "Which endpoint and HTTP method should I use to update a user\u2019s primary email address, and what required parameters and body schema are needed?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "To update a user\u2019s primary email address, use the **PATCH** method on the **`/unified/iam/users/{id}`** endpoint.\n\nDetails:\n- **HTTP method:** `PATCH`\n- **Path:** `/unified/iam/users/{id}`\n- **Required header parameter:**\n  - `x-account-id` (string) \u2013 the account identifier\n- **Required path parameter:**\n  - `id` (string) \u2013 the identifier of the user to update\n- **Required request body:** JSON object matching the `IamUpdateUserRequestDto` schema\n  - In particular, you can set:\n    - `primary_email_address` (string, nullable) \u2013 primary email address of the user\n    - (optionally) other updatable fields like `first_name`, `last_name`, `name`, `username`, `is_bot_user`, `status`, and `passthrough` as defined in `IamUpdateUserRequestDto`.\n\nOn success, the API returns a `200` response with an `UpdateResult` body indicating the record was updated successfully.",
+      "ground_truth_chunks": [
+        "/unified/iam/users/{id}",
+        "IamUpdateUserRequestDto",
+        "UpdateResult"
+      ],
+      "required_keywords": [
+        "PATCH",
+        "/unified/iam/users/{id}",
+        "x-account-id",
+        "id",
+        "IamUpdateUserRequestDto",
+        "primary_email_address"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_iam_s1_001",
+      "question": "Which endpoint should I use to update a user\u2019s primary email address and status, and what required header and path parameter must I include?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "Use the PATCH endpoint `PATCH /unified/iam/users/{id}` with operationId `iam_update_user`. You must include the `x-account-id` header (required, string) and the `id` path parameter (required, string) for the user you want to update. The request body should follow the `IamUpdateUserRequestDto` schema, which allows updating fields such as `primary_email_address` and `status`.",
+      "ground_truth_chunks": [
+        "/unified/iam/users/{id}",
+        "IamUpdateUserRequestDto"
+      ],
+      "required_keywords": [
+        "PATCH /unified/iam/users/{id}",
+        "x-account-id",
+        "id",
+        "IamUpdateUserRequestDto"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_iam_s2_001",
+      "question": "Which endpoint should I call to update an existing IAM user\u2019s details, and which required parameters must I include in the request?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "To update an existing IAM user, you should call the `PATCH /unified/iam/users/{id}` endpoint (operationId `iam_update_user`).\n\nRequired elements:\n- **Path parameter**:\n  - `id` (string): the identifier of the user you want to update.\n- **Header parameter**:\n  - `x-account-id` (string, required): the account identifier.\n- **Request body**:\n  - A JSON payload conforming to the `IamUpdateUserRequestDto` schema in the `application/json` request body is required.",
+      "ground_truth_chunks": [
+        "/unified/iam/users/{id}",
+        "IamUpdateUserRequestDto"
+      ],
+      "required_keywords": [
+        "PATCH /unified/iam/users/{id}",
+        "x-account-id",
+        "id",
+        "IamUpdateUserRequestDto",
+        "request body"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "schema_iam_s0_001",
+      "question": "In the `IamUser` schema, what are the allowed `value` options for the embedded `status` field\u2019s `UserStatusEnum`, and how is support for unknown source values represented?",
+      "category": "schema",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "The `IamUser` schema\u2019s `status` field is defined via `UserStatusEnum`. Within `UserStatusEnum`, the `value` property is a string enum that can be:\n- `\"enabled\"`\n- `\"disabled\"`\n- `\"pending\"`\n- `\"unmapped_value\"`\n- `null`\n\nThe enum also has `\"x-speakeasy-unknown-values\": \"allow\"` on the `value` property, which indicates that unknown provider-specific status values are supported by mapping them to `unmapped_value` while still allowing the original provider value to be preserved in `source_value`.",
+      "ground_truth_chunks": [
+        "IamUser",
+        "UserStatusEnum"
+      ],
+      "required_keywords": [
+        "IamUser",
+        "UserStatusEnum",
+        "value",
+        "enabled",
+        "disabled",
+        "pending",
+        "unmapped_value",
+        "null",
+        "x-speakeasy-unknown-values",
+        "source_value"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_iam_s1_001",
+      "question": "When updating a user via the PATCH /unified/iam/users/{id} endpoint, what is the schema and structure of the JSON request body (including the fields available, their types, and any enums) defined by IamUpdateUserRequestDto?",
+      "category": "schema",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "The PATCH /unified/iam/users/{id} endpoint requires a JSON request body that must conform to the IamUpdateUserRequestDto schema.\n\nThe request body has the following top-level fields, all of which are optional and nullable:\n\n1. primary_email_address\n- Type: string\n- Nullable: true\n- Description: \"Primary email address of the user. This is generally a work email address.\"\n- Example: \"han@stackone.com\"\n\n2. first_name\n- Type: string\n- Nullable: true\n- Example: \"Han\"\n\n3. last_name\n- Type: string\n- Nullable: true\n- Example: \"Solo\"\n\n4. name\n- Type: string\n- Nullable: true\n- Description: \"User's name which (can be a full name or display name)\"\n- Example: \"Han Solo\"\n\n5. username\n- Type: string\n- Nullable: true\n- Example: \"hansolo1977\"\n\n6. is_bot_user\n- Nullable: true\n- OneOf:\n  - boolean\n  - string enum with allowed values: \"true\", \"false\"\n- Description: \"Indicates if the user is a bot or service user\"\n- Example: true\n\n7. status\n- Nullable: true\n- AllOf: UserStatusEnum (referenced as \"$ref\": \"#/components/schemas/UserStatusEnum\")\n- It is an enum-like structured value defined in the UserStatusEnum schema (details for UserStatusEnum itself are not expanded in the sampled content, but the field is clearly a status wrapper object referenced by that enum schema).\n\n8. passthrough\n- Type: object\n- Nullable: true\n- Description: \"Value to pass through to the provider\"\n- additionalProperties: true (arbitrary key\u2013value pairs allowed)\n- Example: { \"other_known_names\": \"John Doe\" }\n\nNo fields are marked as required on IamUpdateUserRequestDto, so the client can send any subset of these fields. The content type for the request body is application/json.",
+      "ground_truth_chunks": [
+        "/unified/iam/users/{id}",
+        "IamUpdateUserRequestDto"
+      ],
+      "required_keywords": [
+        "IamUpdateUserRequestDto",
+        "primary_email_address",
+        "is_bot_user",
+        "oneOf",
+        "UserStatusEnum",
+        "passthrough",
+        "application/json"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_iam_s2_001",
+      "question": "In the IAM API, what fields and nested structures does the `IamUser` schema include for representing a user\u2019s identity, access context, and security status (e.g., names, email, roles, groups, status, MFA configuration, and avatar), and which of these fields reference other schemas?",
+      "category": "schema",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "The `IamUser` schema is an object that models a user and includes the following properties:\n\n- `id` (string, nullable): Unique identifier. Example: `\"8187e5da-dc77-475e-9949-af0f1fa4e4e3\"`.\n- `remote_id` (string, nullable): Provider's unique identifier. Example: `\"8187e5da-dc77-475e-9949-af0f1fa4e4e3\"`.\n- `unified_custom_fields` (object, nullable, additionalProperties=true): Custom Unified Fields configured in the StackOne project. Example: `{ \"my_project_custom_field_1\": \"REF-1236\", \"my_project_custom_field_2\": \"some other value\" }`.\n- `primary_email_address` (string, nullable): Primary (typically work) email address of the user. Example: `\"han@stackone.com\"`.\n- `first_name` (string, nullable): Example: `\"Han\"`.\n- `last_name` (string, nullable): Example: `\"Solo\"`.\n- `name` (string, nullable): User\u2019s name (full or display name). Example: `\"Han Solo\"`.\n- `username` (string, nullable): Example: `\"hansolo1977\"`.\n- `is_bot_user` (nullable): Indicates if the user is a bot or service user. This is a `oneOf`:\n  - boolean, or\n  - string enum with values `\"true\"` or `\"false\"`.\n- `roles` (array of `IamRole`, nullable): List of roles the user is assigned to. Each item references the `IamRole` schema.\n- `groups` (array of `IamGroup`, nullable): List of groups the user is assigned to. Each item references the `IamGroup` schema.\n- `status` (nullable): User status, referencing the `UserStatusEnum` schema via `allOf`. Possible `UserStatusEnum.value` values are `\"enabled\"`, `\"disabled\"`, `\"pending\"`, `\"unmapped_value\"`, or `null`. This describes whether the user is enabled, disabled, or pending, etc.\n- `last_active_at` (string, date-time, nullable): When the user was last active. Example: `\"2021-01-01T01:01:01.000Z\"`.\n- `last_login_at` (string, date-time, nullable): When the user last logged in. Example: `\"2021-01-01T01:01:01.000Z\"`.\n- `created_at` (string, date-time, nullable): When the user was created. Example: `\"2021-01-01T01:01:01.000Z\"`.\n- `updated_at` (string, date-time, nullable): When the user record was last updated. Example: `\"2021-01-01T01:01:01.000Z\"`.\n- `multi_factor_enabled` (array, nullable): The list of Multi-Factor Authentication (MFA) types enabled for the user. Items reference the `IamMfaTypeEnum` schema.\n- `avatar` (nullable): The user\u2019s avatar data, generally containing a URL in its `contents` array. It references the `File` schema via `allOf`.\n\nFields that reference other schemas are:\n- `roles` \u2192 `IamRole`\n- `groups` \u2192 `IamGroup`\n- `status` \u2192 `UserStatusEnum`\n- `multi_factor_enabled` \u2192 `IamMfaTypeEnum`\n- `avatar` \u2192 `File`\n\nTogether, these properties cover identity (IDs, names, email, username), access context (roles, groups, status), security configuration (multi-factor_enabled, is_bot_user), and profile details (avatar, timestamps, unified_custom_fields).",
+      "ground_truth_chunks": [
+        "IamUser",
+        "UserStatusEnum",
+        "IamRole",
+        "IamGroup",
+        "File",
+        "IamMfaTypeEnum"
+      ],
+      "required_keywords": [
+        "IamUser",
+        "roles",
+        "groups",
+        "status",
+        "unified_custom_fields",
+        "is_bot_user",
+        "multi_factor_enabled",
+        "avatar",
+        "UserStatusEnum",
+        "IamRole",
+        "IamGroup"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "id": "auth_iam_001",
+      "question": "When calling any of the IAM endpoints (for example, GET /unified/iam/users), what authentication scheme must be used and which required header must you include to identify the account?",
+      "category": "auth",
+      "relevant_apis": [
+        "iam"
+      ],
+      "ground_truth_answer": "All IAM endpoints in the provided spec use HTTP Basic authentication, as indicated by the security section `\"basic\": { \"type\": \"http\", \"scheme\": \"basic\" }` and the `security: [{ \"basic\": [] }]` blocks on each operation. Additionally, every IAM operation requires the `x-account-id` header in the request. This header is mandatory (`required: true`) and must contain the account identifier (`description: \"The account identifier\"`). Without HTTP Basic auth and the required `x-account-id` header, the requests will not be properly authenticated and scoped to the correct account.",
+      "ground_truth_chunks": [
+        "SECURITY SCHEMES.basic",
+        "/unified/iam/users",
+        "/unified/iam/users/{id}",
+        "/unified/iam/roles",
+        "/unified/iam/roles/{id}",
+        "/unified/iam/groups",
+        "/unified/iam/groups/{id}",
+        "/unified/iam/policies",
+        "/unified/iam/policies/{id}"
+      ],
+      "required_keywords": [
+        "HTTP Basic",
+        "basic",
+        "scheme",
+        "x-account-id",
+        "header",
+        "The account identifier"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "factual_crm_s0_001",
+      "question": "For the `GET /unified/crm/contacts` endpoint, what is the name of the query parameter used to request that the raw provider response be included alongside the mapped result, and what is its default behavior according to the description?",
+      "category": "factual",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "For the `GET /unified/crm/contacts` endpoint, the query parameter is named `raw`. Its description states: \"Indicates that the raw request result should be returned in addition to the mapped result (default value is false)\", meaning that by default the raw result is not returned unless `raw` is explicitly set to true.",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts"
+      ],
+      "required_keywords": [
+        "raw",
+        "query",
+        "default value is false",
+        "unified/crm/contacts"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "factual_crm_s1_001",
+      "question": "When listing CRM contacts using GET /unified/crm/contacts, which query parameter is marked as deprecated for pagination, and what is the recommended cursor-based parameter that replaces it?",
+      "category": "factual",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "For GET /unified/crm/contacts, the `page` query parameter is marked as deprecated for pagination, and the cursor-based parameter that replaces it is `next`. This is reinforced by the `x-speakeasy-pagination` configuration, which identifies `next` as the unified cursor.",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts",
+        "ContactsPaginated"
+      ],
+      "required_keywords": [
+        "page",
+        "deprecated",
+        "next",
+        "cursor",
+        "x-speakeasy-pagination"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_crm_s2_001",
+      "question": "For the `GET /unified/crm/contacts` endpoint, which HTTP status codes are specifically configured for automatic retry via the `x-speakeasy-retries` backoff strategy?",
+      "category": "factual",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "For the `GET /unified/crm/contacts` endpoint, the `x-speakeasy-retries` configuration uses a `backoff` strategy and is specifically set to retry on HTTP status codes **429** and **408**.",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts"
+      ],
+      "required_keywords": [
+        "x-speakeasy-retries",
+        "backoff",
+        "429",
+        "408"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_crm_s0_001",
+      "question": "Which endpoint should I call to retrieve a paginated list of CRM contacts, and which query parameter do I use to request that the raw provider response be included alongside the mapped result?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "Use the GET /unified/crm/contacts endpoint to retrieve a paginated list of CRM contacts. To include the raw provider response in addition to the mapped result, set the raw query parameter (raw=true).",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts",
+        "ContactsPaginated",
+        "RawResponse"
+      ],
+      "required_keywords": [
+        "GET /unified/crm/contacts",
+        "raw",
+        "query parameter",
+        "paginated"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "endpoint_crm_s1_001",
+      "question": "Which endpoint and HTTP method should I use to update an existing CRM contact, and what header and path parameter are required?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "To update an existing CRM contact, use the `PATCH` method on the `/unified/crm/contacts/{id}` endpoint.\n\nRequired inputs:\n- **Path parameter**: `id` (string) \u2013 the identifier of the contact you want to update.\n- **Header**: `x-account-id` (string, required) \u2013 the account identifier.\n\nThe request body must be JSON matching the `CrmCreateContactRequestDto` schema. On success, the API returns a `200` response with a `ContactResult` body. This operation is described as **\"Update Contact (early access)\"** with `operationId` `crm_update_contact`.",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts/{id}",
+        "ContactResult",
+        "CrmCreateContactRequestDto"
+      ],
+      "required_keywords": [
+        "PATCH",
+        "/unified/crm/contacts/{id}",
+        "x-account-id",
+        "id",
+        "Update Contact (early access)",
+        "ContactResult"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "endpoint_crm_s2_001",
+      "question": "Which endpoint should I use to retrieve a paginated list of CRM contacts, and which query parameter provides cursor-based pagination for subsequent pages?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "Use the `GET /unified/crm/contacts` endpoint to retrieve a paginated list of CRM contacts. Cursor-based pagination is controlled by the `next` query parameter, which represents the unified cursor for fetching subsequent pages.",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts",
+        "ContactsPaginated"
+      ],
+      "required_keywords": [
+        "GET /unified/crm/contacts",
+        "next",
+        "cursor",
+        "paginated"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "schema_crm_s0_001",
+      "question": "When creating a contact via the POST `/unified/crm/contacts` endpoint, which fields are available in the `CrmCreateContactRequestDto` request body, and which of them can contain arrays (list-type fields)?",
+      "category": "schema",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "The POST `/unified/crm/contacts` endpoint accepts a JSON request body with schema `CrmCreateContactRequestDto`.\n\nAvailable fields in `CrmCreateContactRequestDto` are:\n- `first_name` (string, nullable) \u2014 the contact first name.\n- `last_name` (string, nullable) \u2014 the contact last name.\n- `company_name` (string, nullable) \u2014 the contact company name.\n- `emails` (array of strings, nullable) \u2014 list of contact email addresses.\n- `phone_numbers` (array of strings, nullable) \u2014 list of contact phone numbers.\n- `deal_ids` (array of strings, nullable) \u2014 list of associated deal IDs.\n- `account_ids` (array of strings, nullable) \u2014 list of associated account IDs.\n- `custom_fields` (array of `CustomFields`, nullable) \u2014 contact custom fields.\n- `passthrough` (object, nullable, additionalProperties allowed) \u2014 value to pass through to the provider.\n\nThe fields that are arrays (list-type fields) are:\n- `emails`\n- `phone_numbers`\n- `deal_ids`\n- `account_ids`\n- `custom_fields`",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts",
+        "CrmCreateContactRequestDto"
+      ],
+      "required_keywords": [
+        "CrmCreateContactRequestDto",
+        "emails",
+        "phone_numbers",
+        "deal_ids",
+        "account_ids",
+        "custom_fields",
+        "passthrough"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_crm_s1_001",
+      "question": "When creating a contact via POST /unified/crm/contacts, what is the structure and allowed data types of the custom_fields array in the CrmCreateContactRequestDto payload, including the possible types for the value property of each custom field?",
+      "category": "schema",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "The POST /unified/crm/contacts endpoint requires a JSON body defined by the CrmCreateContactRequestDto schema. Within this schema, the custom_fields property is:\n- Type: array\n- Nullable: true\n- Description: \"Contact custom fields\"\n- Items: each item is a CustomFields object (\"$ref\": \"#/components/schemas/CustomFields\").\n\nEach CustomFields object has the following structure:\n- id: string, nullable, description \"Unique identifier\" (example UUID-like string)\n- remote_id: string, nullable, description \"Provider's unique identifier\"\n- name: string, nullable, description \"The name of the custom field.\"\n- value: nullable, description \"The value associated with the custom field.\", and it is defined as a oneOf with these possible types:\n  - string\n  - number\n  - boolean\n  - object\n  - array (items of any type)\n  - string with format \"date-time\"\n- value_id: string, nullable, description \"The unique identifier for the value of the custom field.\"\n- remote_value_id: string, nullable, description \"Provider's unique identifier for the value of the custom field.\"\n\nSo, in the request payload, custom_fields is an array of objects, where each object can include identifiers and a name, and its value can be any of: simple scalar (string/number/boolean), structured type (object/array), or a date-time formatted string.",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts",
+        "CrmCreateContactRequestDto",
+        "CustomFields"
+      ],
+      "required_keywords": [
+        "CrmCreateContactRequestDto",
+        "custom_fields",
+        "CustomFields",
+        "oneOf",
+        "value",
+        "string",
+        "number",
+        "boolean",
+        "object",
+        "array",
+        "date-time"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_crm_s2_001",
+      "question": "For the `CrmCreateContactRequestDto` schema used when calling `POST /unified/crm/contacts`, what is the structure and data type of the `custom_fields` and `passthrough` properties, and are they nullable?",
+      "category": "schema",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "In the `CrmCreateContactRequestDto` schema (used as the request body for `POST /unified/crm/contacts`):\n\n- `custom_fields`:\n  - Description: \"Contact custom fields\".\n  - Type: `array`.\n  - Items: each element references `#/components/schemas/CustomFields`.\n  - Nullable: `true` (i.e., it may be omitted or set to null).\n\n- `passthrough`:\n  - Description: \"Value to pass through to the provider\" with an example such as `{ \"other_known_names\": \"John Doe\" }`.\n  - Type: `object`.\n  - `additionalProperties`: `true` (it can contain arbitrary key/value pairs).\n  - Nullable: `true` (i.e., it may be omitted or set to null).",
+      "ground_truth_chunks": [
+        "CrmCreateContactRequestDto",
+        "/unified/crm/contacts"
+      ],
+      "required_keywords": [
+        "CrmCreateContactRequestDto",
+        "custom_fields",
+        "passthrough",
+        "nullable",
+        "array",
+        "object"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "auth_crm_001",
+      "question": "When calling the `List Contacts` endpoint at `/unified/crm/contacts`, what authentication scheme must be used and which required header must be included for the request to be authorized?",
+      "category": "auth",
+      "relevant_apis": [
+        "crm"
+      ],
+      "ground_truth_answer": "To call the `List Contacts` endpoint at `/unified/crm/contacts`, you must use HTTP Basic authentication (the `basic` security scheme). In addition, every request must include the required `x-account-id` header in the request headers, which carries the account identifier.",
+      "ground_truth_chunks": [
+        "/unified/crm/contacts",
+        "basic"
+      ],
+      "required_keywords": [
+        "HTTP Basic",
+        "basic",
+        "x-account-id",
+        "header"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "factual_marketing_s0_001",
+      "question": "When listing campaigns via the `GET /unified/marketing/campaigns` endpoint, which query parameter is deprecated for pagination and what cursor-based parameter should be used instead according to the spec?",
+      "category": "factual",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "For `GET /unified/marketing/campaigns`, the `page` query parameter is deprecated for pagination. Instead, the cursor-based `next` query parameter (\"The unified cursor\") should be used to paginate results.",
+      "ground_truth_chunks": [
+        "/unified/marketing/campaigns"
+      ],
+      "required_keywords": [
+        "page",
+        "deprecated",
+        "next",
+        "unified cursor"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_marketing_s1_001",
+      "question": "When listing SMS templates via GET /unified/marketing/templates/sms, which query parameter is deprecated for pagination and what is the recommended cursor-based parameter that replaces it?",
+      "category": "factual",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "For GET /unified/marketing/templates/sms, the deprecated pagination query parameter is `page`, and the cursor-based parameter that replaces it is `next`.",
+      "ground_truth_chunks": [
+        "/unified/marketing/templates/sms",
+        "SmsTemplatesPaginated"
+      ],
+      "required_keywords": [
+        "/unified/marketing/templates/sms",
+        "page",
+        "deprecated",
+        "next",
+        "cursor"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "factual_marketing_s2_001",
+      "question": "When listing campaigns via the MARKETING API, which query parameter is used as the cursor for pagination and what is the JSON path of the corresponding next cursor value in the response?",
+      "category": "factual",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "For listing campaigns, the cursor query parameter is `next`, and the corresponding next cursor value in the response is found at the JSON path `$.next`. This is defined by the `x-speakeasy-pagination` configuration on `GET /unified/marketing/campaigns`, which specifies the input cursor parameter `next` and the output `nextCursor: \"$.next\"` in the `CampaignsPaginated` response schema.",
+      "ground_truth_chunks": [
+        "/unified/marketing/campaigns",
+        "CampaignsPaginated"
+      ],
+      "required_keywords": [
+        "next",
+        "$.next",
+        "x-speakeasy-pagination",
+        "cursor",
+        "CampaignsPaginated"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "id": "endpoint_marketing_s0_001",
+      "question": "Which endpoint should I call to retrieve a paginated list of email templates, and which query parameter provides the cursor for fetching the next page of results?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "Use the GET /unified/marketing/templates/email endpoint to retrieve a paginated list of email templates. Pagination uses a cursor-based approach, where the next page cursor is returned in the response field EmailTemplatesPaginated.next and must be sent back in the next request using the next query parameter.",
+      "ground_truth_chunks": [
+        "/unified/marketing/templates/email",
+        "EmailTemplatesPaginated"
+      ],
+      "required_keywords": [
+        "GET /unified/marketing/templates/email",
+        "next query parameter",
+        "cursor",
+        "EmailTemplatesPaginated"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "endpoint_marketing_s1_001",
+      "question": "Which endpoint should I call to list all push notification templates for an account, and what header must I include with each request?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "To list all push notification templates, call the `GET /unified/marketing/templates/push` endpoint. Each request must include the `x-account-id` header containing the account identifier.",
+      "ground_truth_chunks": [
+        "/unified/marketing/templates/push"
+      ],
+      "required_keywords": [
+        "GET /unified/marketing/templates/push",
+        "x-account-id"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "endpoint_marketing_s2_001",
+      "question": "Which endpoint should I call to retrieve a paginated list of SMS templates, and which query parameter provides the unified cursor for pagination?",
+      "category": "endpoint",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "Use the GET endpoint at `/unified/marketing/templates/sms` to retrieve a paginated list of SMS templates. The unified cursor for pagination is provided via the `next` query parameter.",
+      "ground_truth_chunks": [
+        "/unified/marketing/templates/sms",
+        "SmsTemplatesPaginated"
+      ],
+      "required_keywords": [
+        "/unified/marketing/templates/sms",
+        "GET",
+        "next",
+        "query parameter",
+        "paginated"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "schema_marketing_s0_001",
+      "question": "When creating a content block via POST /unified/marketing/content_blocks, what fields are available in the MarketingCreateContentBlocksRequestDto body, and what are the allowed values for the ContentBlockTypeEnumApiModel.value property?",
+      "category": "schema",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "The POST /unified/marketing/content_blocks endpoint requires a JSON body matching the MarketingCreateContentBlocksRequestDto schema.\n\nMarketingCreateContentBlocksRequestDto has the following properties:\n- name: string, nullable.\n- tags: array of strings, nullable.\n- content: string, nullable.\n- type: a Stackone enum identifying the type of content block, nullable. It is defined by ContentBlockTypeEnumApiModel.\n- passthrough: object, nullable, with additionalProperties: true, used as a \"Value to pass through to the provider\" (for example: {\"other_known_names\": \"John Doe\"}).\n\nThe type field uses ContentBlockTypeEnumApiModel, whose value property is a string enum with the following allowed values:\n- \"text\"\n- \"html\"\n- \"image\"\n- \"code-snippet\"\n- \"unmapped_value\"\n- null\n\nThe ContentBlockTypeEnumApiModel.value property is nullable and has description: \"The type of the content blocks.\"",
+      "ground_truth_chunks": [
+        "/unified/marketing/content_blocks",
+        "MarketingCreateContentBlocksRequestDto",
+        "ContentBlockTypeEnumApiModel"
+      ],
+      "required_keywords": [
+        "MarketingCreateContentBlocksRequestDto",
+        "ContentBlockTypeEnumApiModel",
+        "type",
+        "value",
+        "text",
+        "html",
+        "image",
+        "code-snippet",
+        "unmapped_value",
+        "passthrough"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_marketing_s1_001",
+      "question": "When creating a new content block via POST /unified/marketing/content_blocks, what fields are available in the MarketingCreateContentBlocksRequestDto body, and what are the allowed enum values for the ContentBlockTypeEnumApiModel \"type\" field?",
+      "category": "schema",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "The POST /unified/marketing/content_blocks endpoint requires a JSON body with schema MarketingCreateContentBlocksRequestDto.\n\nMarketingCreateContentBlocksRequestDto has the following available fields:\n- \"name\": string, nullable\n- \"tags\": array of strings, nullable\n- \"content\": string, nullable\n- \"type\": a Stackone enum identifying the type of content block, nullable; this is defined by ContentBlockTypeEnumApiModel\n- \"passthrough\": object, nullable, with additionalProperties allowed; it is used as a value to pass through to the provider\n\nThe \"type\" field uses the ContentBlockTypeEnumApiModel schema. That schema has a \"value\" property and a \"source_value\" property. For the \"value\" property, the allowed enum values are:\n- \"text\"\n- \"html\"\n- \"image\"\n- \"code-snippet\"\n- \"unmapped_value\"\n- null\n\nThe \"source_value\" property is nullable and can be one of: string, number, boolean, object, or array.",
+      "ground_truth_chunks": [
+        "/unified/marketing/content_blocks",
+        "MarketingCreateContentBlocksRequestDto",
+        "ContentBlockTypeEnumApiModel"
+      ],
+      "required_keywords": [
+        "MarketingCreateContentBlocksRequestDto",
+        "ContentBlockTypeEnumApiModel",
+        "type",
+        "text",
+        "html",
+        "image",
+        "code-snippet",
+        "unmapped_value",
+        "passthrough"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "schema_marketing_s2_001",
+      "question": "When creating a new push template via POST /unified/marketing/templates/push, which top-level fields are available in the MarketingCreatePushTemplateRequestDto body, and what is the expected type of each?",
+      "category": "schema",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "The POST /unified/marketing/templates/push endpoint expects a JSON body that matches the MarketingCreatePushTemplateRequestDto schema.\n\nMarketingCreatePushTemplateRequestDto is an object with the following top\u2011level fields:\n\n1. name\n- Type: string\n- Nullable: true\n\n2. tags\n- Type: array of strings\n- Nullable: true\n\n3. messages\n- Type: array\n- Items: each item is a PushMessages object (\"$ref\": \"#/components/schemas/PushMessages\")\n- Nullable: true\n\n4. passthrough\n- Type: object\n- Description: \"Value to pass through to the provider\"\n- additionalProperties: true (free-form object)\n- Nullable: true",
+      "ground_truth_chunks": [
+        "/unified/marketing/templates/push",
+        "MarketingCreatePushTemplateRequestDto"
+      ],
+      "required_keywords": [
+        "MarketingCreatePushTemplateRequestDto",
+        "name",
+        "tags",
+        "messages",
+        "passthrough",
+        "array of strings",
+        "PushMessages"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "auth_marketing_001",
+      "question": "When calling any of the MARKETING API template or campaign endpoints (for example, GET /unified/marketing/templates/email), what authentication scheme must be used and which required header must you include to identify the account?",
+      "category": "auth",
+      "relevant_apis": [
+        "marketing"
+      ],
+      "ground_truth_answer": "All MARKETING API operations in the provided spec use HTTP Basic authentication. This is defined under the security scheme named \"basic\" with type \"http\" and scheme \"basic\", and each operation includes `\"security\": [{ \"basic\": [] }]`.\n\nIn addition to providing HTTP Basic auth, every endpoint shown requires an `x-account-id` header to identify the account. This header is required (`\"required\": true`) and must be sent with a string value representing the account identifier.\n\nSo, to authenticate and identify the account when calling endpoints like GET /unified/marketing/templates/email, you must:\n1. Use HTTP Basic authentication (the `basic` security scheme), and\n2. Include the required `x-account-id` header with the account identifier as a string.",
+      "ground_truth_chunks": [
+        "/unified/marketing/templates/email",
+        "/unified/marketing/templates/sms",
+        "/unified/marketing/templates/push",
+        "/unified/marketing/templates/in_app",
+        "/unified/marketing/templates/omni_channel",
+        "/unified/marketing/campaigns",
+        "Security Schemes: basic"
+      ],
+      "required_keywords": [
+        "HTTP Basic",
+        "basic",
+        "security",
+        "x-account-id",
+        "header",
+        "required"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "cross_api_s0_001",
+      "question": "Which StackOne unified APIs shown support cursor-based pagination using a `next` query parameter and a `next` field in the paginated response body, and what are the names of the corresponding paginated response schemas in at least three of those APIs?",
+      "category": "cross_api",
+      "relevant_apis": [
+        "HRIS",
+        "ATS",
+        "LMS",
+        "IAM",
+        "CRM",
+        "MARKETING"
+      ],
+      "ground_truth_answer": "Multiple unified APIs use the same cursor-based pagination pattern: a `next` query parameter and a `next` field in the response body.\n\nFrom the sampled specs:\n- HRIS\n  - Endpoints: `/unified/hris/time_off_policies`, `/unified/hris/jobs`\n  - Both accept `next` as a query parameter (\"The unified cursor\").\n  - Their response schemas include a `next` field, e.g. `TimeOffPoliciesPaginated` and `HrisJobsPaginated` (not fully shown, but the pattern is implied by the pagination metadata in the endpoints and by other paginated HRIS schemas like `WorkEligibilityPaginated`, which explicitly defines `next`).\n- ATS\n  - Endpoints: `/unified/ats/lists`, `/unified/ats/job_postings`\n  - Both accept `next` as a query parameter and use cursor pagination via `x-speakeasy-pagination` with `outputs.nextCursor = \"$.next\"`.\n  - The corresponding paginated response schemas include `next` and are named `ListsPaginated` and `JobPostingsPaginated`.\n- LMS\n  - Endpoints: `/unified/lms/completions`, `/unified/lms/users/{id}/assignments`\n  - Both accept `next` as a query parameter and have `x-speakeasy-pagination` configured to read `$.next` from the response.\n  - Their paginated response schemas are `CompletionsPaginated` and `AssignmentsPaginated`, which (by analogy with other paginated schemas) contain a `next` field.\n- IAM\n  - Endpoint: `/unified/iam/users`\n  - Accepts `next` as a query parameter and uses `x-speakeasy-pagination` with `outputs.nextCursor = \"$.next\"`.\n  - The paginated response schema is `IamUsersPaginated`, which follows the same pattern as other `*Paginated` schemas (like `WorkEligibilityPaginated`) and includes `next`.\n- CRM\n  - Endpoints: `/unified/crm/contacts`, `/unified/crm/lists`, `/unified/crm/accounts`\n  - All accept `next` as a query parameter and use `x-speakeasy-pagination` with `outputs.nextCursor = \"$.next\"`.\n  - Example body schema: `ContactsPaginated` explicitly defines a `next` field and a `data` array.\n- MARKETING\n  - Endpoints: `/unified/marketing/campaigns`, `/unified/marketing/templates/sms`, `/unified/marketing/templates/omni_channel`\n  - All accept `next` as a query parameter and have `x-speakeasy-pagination` with `outputs.nextCursor = \"$.next\"`.\n  - Their paginated response schemas follow the same pattern (e.g., `TemplatesPaginated`, `SmsTemplatesPaginated`, and `ContentBlocksPaginated`, which explicitly defines `next`).\n\nThus, at least three APIs with cursor-based pagination and `next` in both the query and response are:\n- HRIS: `TimeOffPoliciesPaginated`, `HrisJobsPaginated` (pattern confirmed by `WorkEligibilityPaginated` schema)\n- ATS: `ListsPaginated`, `JobPostingsPaginated`\n- CRM: `ContactsPaginated`, `ListsPaginated`, `AccountsPaginated`\n- MARKETING: `TemplatesPaginated`, `SmsTemplatesPaginated`, `ContentBlocksPaginated`.\nAll of these share the `next` query parameter and a `next` field in the `*Paginated` response schema.",
+      "ground_truth_chunks": [
+        "/unified/hris/time_off_policies",
+        "/unified/hris/jobs",
+        "WorkEligibilityPaginated",
+        "/unified/ats/lists",
+        "/unified/ats/job_postings",
+        "ListsPaginated (ATS)",
+        "JobPostingsPaginated",
+        "/unified/lms/completions",
+        "/unified/lms/users/{id}/assignments",
+        "CompletionsPaginated",
+        "AssignmentsPaginated",
+        "/unified/iam/users",
+        "IamUsersPaginated",
+        "/unified/crm/contacts",
+        "/unified/crm/lists",
+        "/unified/crm/accounts",
+        "ContactsPaginated",
+        "ListsPaginated (CRM)",
+        "AccountsPaginated",
+        "/unified/marketing/campaigns",
+        "/unified/marketing/templates/sms",
+        "/unified/marketing/templates/omni_channel",
+        "ContentBlocksPaginated",
+        "SmsTemplatesPaginated",
+        "TemplatesPaginated"
+      ],
+      "required_keywords": [
+        "next",
+        "cursor",
+        "paginated",
+        "*Paginated",
+        "HRIS",
+        "CRM",
+        "ATS"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "cross_api_s0_002",
+      "question": "Compare how user-related identifiers are passed to retrieve user-specific records in the IAM and LMS APIs. Specifically, how does `/unified/iam/users/{id}` identify the user compared to `/unified/lms/users/{id}/assignments`, and what additional user-identification query parameters does the LMS assignments endpoint support that IAM does not?",
+      "category": "cross_api",
+      "relevant_apis": [
+        "IAM",
+        "LMS"
+      ],
+      "ground_truth_answer": "Both IAM and LMS use a path parameter `id` to identify a user, but the LMS assignments endpoint supports extra ways to specify the user via query parameters.\n\nIAM\n- Endpoint: `/unified/iam/users/{id}`\n- User is identified solely via the `id` path parameter:\n  - `id` (path, required, type `string`): the identifier of the user.\n- There are no additional query parameters to identify the user; other IAM user operations (get, update, delete) on `/unified/iam/users/{id}` rely on this same path `id`.\n\nLMS\n- Endpoint: `/unified/lms/users/{id}/assignments`\n- Primary user identifier is also the `id` path parameter:\n  - `id` (path, required, type `string`).\n- In addition, the LMS endpoint supports optional user-identification-related query parameters:\n  - `user_id` (query, optional, type `string`): \"The user ID associated with this assignment\".\n  - `remote_user_id` (query, optional, type `string`): \"Provider's unique identifier of the user related to the assignment\".\n\nComparison\n- Both APIs: use a path parameter `id` to identify the user.\n- LMS only: allows passing `user_id` and `remote_user_id` as query parameters to target assignments by internal or provider user IDs.\n- IAM does not provide these additional user-identification query parameters on `/unified/iam/users/{id}`; user selection is done exclusively by the path `id`.",
+      "ground_truth_chunks": [
+        "/unified/iam/users/{id}",
+        "IamUserResult",
+        "/unified/lms/users/{id}/assignments",
+        "Assignment",
+        "AssignmentsPaginated"
+      ],
+      "required_keywords": [
+        "/unified/iam/users/{id}",
+        "/unified/lms/users/{id}/assignments",
+        "id path parameter",
+        "user_id",
+        "remote_user_id",
+        "query parameter"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "cross_api_s0_003",
+      "question": "Suppose you are building a StackOne integration that needs to audit access across business systems by correlating people and groups from HRIS and IAM, and then linking to CRM contacts for external-facing identities. Using only the sampled specifications, describe a viable cross-API correlation strategy that:\n1) Maps HRIS teams to IAM groups,\n2) Maps HRIS employees or teams to IAM users and roles,\n3) Maps IAM users to CRM contacts.\nYour answer should name the concrete resource schemas and at least one endpoint from EACH of HRIS, IAM, and CRM that you would use, and explain which identifier fields would be most appropriate to use for matching (e.g., names, IDs, or emails) given the fields available.",
+      "category": "cross_api",
+      "relevant_apis": [
+        "HRIS",
+        "IAM",
+        "CRM"
+      ],
+      "ground_truth_answer": "A viable cross-API correlation strategy can be designed around shared concepts (people and groups) and common identifiers (IDs, names, and especially email-like fields). From the sampled specs we can only infer certain fields, so the strategy must use fields that are explicitly present.\n\n1) Map HRIS teams to IAM groups\n- HRIS side:\n  - Schema: `HRISTeam` (HRIS).\n    - Key fields:\n      - `id` and `remote_id`: internal vs provider team identifiers.\n      - `name`: \"The name of the group\" (e.g., \"Engineering\").\n      - `parent_ids`, `remote_parent_ids`: group hierarchy.\n      - `owner_ids`, `remote_owner_ids`: owners of the group.\n      - `company_id`, `remote_company_id`.\n- IAM side:\n  - Schema: `IamGroup` (not shown but implied by `IamGroupResult`).\n  - Endpoint: `/unified/iam/groups/{id}` returns `IamGroupResult`.\n- Correlation approach:\n  - Use the concept-level match: HRISTeam represents HR groups, IAM groups represent access groups.\n  - Because we don\u2019t see a direct cross-system ID field, we would primarily use `HRISTeam.name` to match against the IAM group\u2019s `name` field (present in `IamGroup` via `IamGroupResult`), possibly combined with hierarchy or owner relationships (`parent_ids`, `owner_ids`) if IAM groups expose similar fields (they at least have `name`, `roles`, and hierarchical type-related fields according to the endpoint description).\n  - Where available, you can store the IAM group `id` or `remote_id` inside HRIS unified custom fields or IAM unified custom fields, but those fields are not explicitly shown on HRISTeam; the explicit linkage we can rely on from the sample is via semantic matching on `name` and structure.\n\n2) Map HRIS employees or teams to IAM users and roles\n- HRIS side:\n  - While a full `Employee` schema is not shown, HRIS endpoints expose employee-related resources such as time off, jobs, positions, and time entries. For identity correlation to IAM, the most useful HRIS object we see for grouping is still `HRISTeam`.\n  - Schema: `HRISTeam` again provides ownership relationships through `owner_ids` and `remote_owner_ids`, which likely refer to employees or people who own a team.\n- IAM side:\n  - Users:\n    - Endpoint: `/unified/iam/users/{id}` and `/unified/iam/users`.\n    - Schema: `IamUserResult` \u2192 `IamUser` (implied) with key properties listed in the `fields` examples: `first_name`, `last_name`, `name`, `primary_email_address`, `roles`, `groups`, `status`, etc.\n  - Roles:\n    - Endpoint: `/unified/iam/roles/{id}`.\n    - Schema: `IamRoleResult` \u2192 `IamRole` with properties `id`, `remote_id`, `name`, `type`, `policies`, `description` (per `fields` example in the endpoint).\n- Correlation approach:\n  - Team \u2192 Group (from step 1): once you\u2019ve mapped a given `HRISTeam` to one or more IAM groups, the IAM user records (`IamUser`) will list those groups in their `groups` field (expandable via the `expand` query parameter on `/unified/iam/users` or `/unified/iam/users/{id}`), letting you infer which IAM users belong to which HR team.\n  - Employee \u2192 User: since we don\u2019t see an HRIS Employee schema in the sample, we fall back to owner relationships and names/emails:\n    - Use `owner_ids`/`remote_owner_ids` on `HRISTeam` to identify the HRIS owners of the team.\n    - Look up corresponding IAM users via `/unified/iam/users` and match on personal attributes, especially `primary_email_address`, `first_name`, and `last_name` (all explicitly exposed in the IAM `fields` example).\n    - Then fetch the user\u2019s roles via `/unified/iam/roles/{id}` using the IDs listed under the user\u2019s `roles` field (expandable with `expand=roles`). This gives you the access roles associated with the person or team.\n\n3) Map IAM users to CRM contacts\n- IAM side:\n  - Endpoint: `/unified/iam/users` or `/unified/iam/users/{id}`.\n  - Key fields (from `fields` examples):\n    - `first_name`, `last_name`, `name`.\n    - `primary_email_address`.\n- CRM side:\n  - Contacts:\n    - Endpoint: `/unified/crm/contacts` returns `ContactsPaginated`.\n    - Schema: `Contact`.\n      - Key fields:\n        - `first_name`, `last_name`.\n        - `company_name`.\n        - `emails`: list of contact email addresses.\n        - `phone_numbers`.\n        - `id`, `remote_id`.\n  - Accounts (optional for organization mapping):\n    - Endpoint: `/unified/crm/accounts` and `/unified/crm/accounts/{id}` \u2192 `AccountsPaginated` / `AccountResult`.\n- Correlation approach:\n  - IAM user \u2192 CRM contact:\n    - Primary join key: email.\n      - Match IAM `primary_email_address` to any entry in `Contact.emails`.\n    - Secondary heuristics: combine personal names and company information.\n      - Match IAM `first_name`/`last_name` to `Contact.first_name`/`Contact.last_name`.\n      - If you know the organization, map the user\u2019s organization (from HRIS `company_id` or `HRISTeam` context) to `CRM` accounts (`/unified/crm/accounts`) and then filter contacts that belong to those accounts via `account_ids` or `remote_account_ids` on `Contact`.\n  - Once a match is found, store cross-references: e.g., log the CRM `Contact.id` and `remote_id` against your IAM user or in your own correlation table.\n\nSummary of concrete pieces used\n- HRIS: `HRISTeam` schema for group identity and ownership; HRIS endpoints such as `/unified/hris/time_off_policies` and `/unified/hris/jobs` are not directly used for identity but live in the same HRIS namespace.\n- IAM:\n  - `/unified/iam/users` and `/unified/iam/users/{id}` \u2192 `IamUserResult` (with `first_name`, `last_name`, `primary_email_address`, `roles`, `groups`).\n  - `/unified/iam/groups/{id}` \u2192 `IamGroupResult`.\n  - `/unified/iam/roles/{id}` \u2192 `IamRoleResult`.\n- CRM:\n  - `/unified/crm/contacts` \u2192 `ContactsPaginated` \u2192 `Contact` (with `emails`, `first_name`, `last_name`, `company_name`, `account_ids`, `remote_account_ids`).\n  - Optionally `/unified/crm/accounts` and `/unified/crm/accounts/{id}` \u2192 `AccountsPaginated` / `AccountResult` for organizational alignment.\n\nGiven these fields, the most robust cross-API correlation keys that are explicitly visible in the sample are:\n- For people: email addresses (IAM `primary_email_address` \u2194 CRM `emails`), supported by matching names (`first_name` / `last_name`).\n- For groups: semantic and naming similarity between HRIS `HRISTeam.name` and IAM group `name`, plus hierarchy and ownership patterns.\n- For organizations: CRM `Account` identifiers (`id`, `remote_id`) aligned with HRIS `company_id`/`remote_company_id` on `HRISTeam` where available.",
+      "ground_truth_chunks": [
+        "HRISTeam",
+        "/unified/hris/time_off_policies",
+        "/unified/hris/jobs",
+        "/unified/iam/users",
+        "/unified/iam/users/{id}",
+        "IamUsersPaginated",
+        "IamUserResult",
+        "/unified/iam/groups/{id}",
+        "IamGroupResult",
+        "/unified/iam/roles/{id}",
+        "IamRoleResult",
+        "/unified/crm/contacts",
+        "ContactsPaginated",
+        "Contact",
+        "/unified/crm/accounts",
+        "/unified/crm/accounts/{id}",
+        "AccountResult"
+      ],
+      "required_keywords": [
+        "HRISTeam",
+        "IamUserResult",
+        "IamGroupResult",
+        "IamRoleResult",
+        "Contact",
+        "/unified/iam/users",
+        "/unified/iam/groups/{id}",
+        "/unified/crm/contacts",
+        "email",
+        "first_name",
+        "last_name"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "id": "cross_api_s1_001",
+      "question": "Compare how pagination is handled when listing jobs in the HRIS API and listing contacts in the CRM API. Which query parameters control pagination in each endpoint, and what cursor field in the response should be used to fetch the next page?",
+      "category": "cross_api",
+      "relevant_apis": [
+        "HRIS",
+        "CRM"
+      ],
+      "ground_truth_answer": "For HRIS jobs, pagination is controlled by the optional query parameters `page` (deprecated), `page_size`, and `next` on the `GET /unified/hris/jobs` endpoint. The cursor-based pagination uses the `next` field returned in the `HrisJobsPaginated` response body (`$.next`) as the unified cursor for the next page.\n\nFor CRM contacts, pagination is similarly controlled by the optional query parameters `page` (deprecated), `page_size`, and `next` on the `GET /unified/crm/contacts` endpoint. The response uses the `ContactsPaginated` schema, which (by analogy with the other paginated schemas shown) includes a `next` field used as the unified cursor to request subsequent pages via the `next` query parameter.\n\nSo in both APIs:\n- Request-side pagination parameters: `page` (deprecated), `page_size`, and `next`.\n- Response-side cursor: the `next` field in the paginated response schema (`HrisJobsPaginated.next` for HRIS jobs, `ContactsPaginated.next` for CRM contacts).",
+      "ground_truth_chunks": [
+        "/unified/hris/jobs",
+        "HrisJobsPaginated",
+        "/unified/crm/contacts",
+        "ContactsPaginated"
+      ],
+      "required_keywords": [
+        "page",
+        "page_size",
+        "next",
+        "cursor",
+        "HrisJobsPaginated",
+        "ContactsPaginated"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "cross_api_s1_002",
+      "question": "You need to fetch group information from both the HRIS and IAM unified APIs for a given linked account. Which HTTP header must you provide to identify the account for each API, which endpoints would you call to retrieve a single group record, and what query parameters are available in both APIs to control the set of fields returned and optionally include raw provider data?",
+      "category": "cross_api",
+      "relevant_apis": [
+        "HRIS",
+        "IAM"
+      ],
+      "ground_truth_answer": "Both HRIS and IAM unified APIs require the `x-account-id` header to identify the linked account.\n\nTo fetch a single group:\n- HRIS: call `GET /unified/hris/groups/{id}`\n- IAM: HRIS-style single-group listing for IAM isn\u2019t shown, but IAM provides group collection and details via `GET /unified/iam/groups` for listing; for a single group, you would typically use the IAM user or role expansion, but only `/unified/iam/groups` is sampled here. The question asks for \"a single group record\": in the sampled spec, the explicit single-record group endpoint is only present for HRIS (`/unified/hris/groups/{id}`). The IAM API allows retrieving group data as a list with `GET /unified/iam/groups`.\n\nCommon query parameters across these HRIS and IAM group endpoints:\n- `fields` (query): comma-separated list of fields to be returned in the response. Present on `GET /unified/hris/groups/{id}` and on `GET /unified/iam/groups`.\n- `raw` (query): optional boolean to indicate that the raw provider response should be returned in addition to the mapped result. Present on `GET /unified/hris/groups/{id}` and on IAM user/role/policy endpoints; for listing IAM groups, the same pattern applies (though `raw` is defined on users/roles/policies in IAM spec sample, the header and behavior pattern is consistent across IAM unified endpoints).\n\nThus, for a given account you:\n- Set header: `x-account-id: {account_identifier}` in both HRIS and IAM calls.\n- Use `fields` in both APIs to control which fields are returned.\n- Use `raw` where available (e.g., `raw` on HRIS groups and IAM entities such as users, roles, and policies) to include the provider\u2019s raw response alongside the unified data.",
+      "ground_truth_chunks": [
+        "/unified/hris/groups/{id}",
+        "/unified/iam/groups",
+        "/unified/iam/users/{id}",
+        "/unified/iam/roles",
+        "/unified/iam/policies"
+      ],
+      "required_keywords": [
+        "x-account-id",
+        "/unified/hris/groups/{id}",
+        "/unified/iam/groups",
+        "fields",
+        "raw",
+        "header"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "cross_api_s1_003",
+      "question": "You want to design a client that can uniformly handle \"Conflict\" (HTTP 409) and \"Validation error\" (HTTP 422) responses across HRIS and Marketing unified APIs. Using only the sampled specs, describe the JSON structure (field names and types) of the `ConflictResponse` and `UnprocessableEntityResponse` objects, and explain how that structure is consistent between at least one HRIS endpoint and at least one Marketing endpoint.",
+      "category": "cross_api",
+      "relevant_apis": [
+        "HRIS",
+        "MARKETING"
+      ],
+      "ground_truth_answer": "Across both the HRIS and Marketing APIs, the `ConflictResponse` and `UnprocessableEntityResponse` schemas share the same JSON structure for their core fields.\n\n`ConflictResponse` structure (used by both HRIS and Marketing endpoints):\n- `statusCode`: number\n  - Description: HTTP status code\n  - Example: 409\n- `message`: string\n  - Description: Error message (e.g., \"Conflict\")\n- `timestamp`: string (date-time)\n  - Description: Timestamp when the error occurred\n  - Example: \"2023-05-30T00:00:00.000Z\"\n\nAll three fields (`statusCode`, `message`, `timestamp`) are required.\n\n`UnprocessableEntityResponse` structure (referenced by HRIS and Marketing endpoints):\n- `statusCode`: number\n  - Description: HTTP status code\n  - Example: 422\n- `message`: string\n  - Description: Error message (e.g., \"Unprocessable Entity\")\n- `timestamp`: string (date-time)\n  - Description: Timestamp when the error occurred\n  - Example: \"2023-05-30T00:00:00.000Z\"\n\nAgain, these three fields are required.\n\nConsistency across APIs:\n- HRIS endpoints such as `POST /unified/hris/employees/{id}/documents/upload` and `GET /unified/hris/jobs` list `409` responses referencing `#/components/schemas/ConflictResponse` and `422` responses referencing `#/components/schemas/UnprocessableEntityResponse`.\n- Marketing endpoints such as `GET /unified/marketing/templates/push/{id}` and `PATCH /unified/marketing/templates/push/{id}` also define `409` responses using `#/components/schemas/ConflictResponse` and `422` responses using `#/components/schemas/UnprocessableEntityResponse`.\n\nBecause these schemas are identical in field names and types in the shared StackOne error model, a client can:\n- Inspect `statusCode` (number) to distinguish 409 vs 422.\n- Read the human-readable `message`.\n- Use `timestamp` consistently for logging or retry logic.\n\nThus, the same JSON error-handling logic for `ConflictResponse` and `UnprocessableEntityResponse` can be reused across both HRIS and Marketing unified endpoints.",
+      "ground_truth_chunks": [
+        "UnprocessableEntityResponse (STACKONE schemas)",
+        "ConflictResponse (STACKONE schemas)",
+        "/unified/hris/employees/{id}/documents/upload",
+        "/unified/hris/jobs",
+        "/unified/marketing/templates/push/{id}",
+        "/unified/marketing/templates/sms/{id}"
+      ],
+      "required_keywords": [
+        "ConflictResponse",
+        "UnprocessableEntityResponse",
+        "statusCode",
+        "message",
+        "timestamp",
+        "409",
+        "422"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "id": "cross_api_s2_001",
+      "question": "Which unified APIs shown (HRIS, ATS, LMS, IAM, CRM, MARKETING) require the same x-account-id header parameter on their unified endpoints, and what description and type are specified for this header?",
+      "category": "cross_api",
+      "relevant_apis": [
+        "HRIS",
+        "ATS",
+        "LMS",
+        "IAM",
+        "CRM",
+        "MARKETING"
+      ],
+      "ground_truth_answer": "Across the sampled unified APIs, HRIS, ATS, LMS, IAM, CRM, and MARKETING all use the same x-account-id header on their unified endpoints.\n\nFor each of these APIs, the header is defined as:\n- Name: x-account-id\n- In: header\n- Required: true (where shown on unified endpoints)\n- Description: \"The account identifier\"\n- Schema type: string\n\nExamples from the specs:\n- HRIS: /unified/hris/employees/{id}/work_eligibility/{subResourceId}, /unified/hris/time_off/{id}, /unified/hris/time_entries/{id}, /unified/hris/positions/{id}, /unified/hris/jobs all define a header parameter:\n  - name: x-account-id\n  - in: header\n  - description: \"The account identifier\"\n  - required: true\n  - schema: { \"type\": \"string\" }\n\n- ATS: /unified/ats/jobs/{id}/application_stages/{subResourceId}, /unified/ats/applications/{id}, /unified/ats/locations/{id}, /unified/ats/offers, /unified/ats/applications/{id}/documents/{subResourceId}/download all define the same x-account-id header with description \"The account identifier\" and schema type string.\n\n- LMS: /unified/lms/users/{id}/assignments, /unified/lms/skills, /unified/lms/completions/{id}, /unified/lms/courses, /unified/lms/users all define x-account-id in the header with description \"The account identifier\" and type string.\n\n- IAM: /unified/iam/groups/{id}, /unified/iam/users/{id}, /unified/iam/roles, /unified/iam/roles/{id}, /unified/iam/policies all define a required header x-account-id with description \"The account identifier\" and schema type string.\n\n- CRM: /unified/crm/custom_field_definitions/contacts, /unified/crm/custom_field_definitions/contacts/{id}, /unified/crm/lists, /unified/crm/accounts, /unified/crm/contacts/{id} all define x-account-id in the header as required, description \"The account identifier\", schema type string.\n\n- MARKETING: /unified/marketing/templates/omni_channel, /unified/marketing/templates/email, /unified/marketing/content_blocks/{id}, /unified/marketing/templates/email/{id}, /unified/marketing/templates/in_app all include the same required header x-account-id, described as \"The account identifier\" with schema type string.\n\nThus, all these unified APIs share a common authentication/context header pattern: a required string header called x-account-id described consistently as \"The account identifier.\"",
+      "ground_truth_chunks": [
+        "/unified/hris/employees/{id}/work_eligibility/{subResourceId}",
+        "/unified/hris/time_off/{id}",
+        "/unified/hris/time_entries/{id}",
+        "/unified/hris/positions/{id}",
+        "/unified/hris/jobs",
+        "/unified/ats/jobs/{id}/application_stages/{subResourceId}",
+        "/unified/ats/applications/{id}",
+        "/unified/ats/locations/{id}",
+        "/unified/ats/offers",
+        "/unified/ats/applications/{id}/documents/{subResourceId}/download",
+        "/unified/lms/users/{id}/assignments",
+        "/unified/lms/skills",
+        "/unified/lms/completions/{id}",
+        "/unified/lms/courses",
+        "/unified/lms/users",
+        "/unified/iam/groups/{id}",
+        "/unified/iam/users/{id}",
+        "/unified/iam/roles",
+        "/unified/iam/roles/{id}",
+        "/unified/iam/policies",
+        "/unified/crm/custom_field_definitions/contacts",
+        "/unified/crm/custom_field_definitions/contacts/{id}",
+        "/unified/crm/lists",
+        "/unified/crm/accounts",
+        "/unified/crm/contacts/{id}",
+        "/unified/marketing/templates/omni_channel",
+        "/unified/marketing/templates/email",
+        "/unified/marketing/content_blocks/{id}",
+        "/unified/marketing/templates/email/{id}",
+        "/unified/marketing/templates/in_app"
+      ],
+      "required_keywords": [
+        "x-account-id",
+        "header",
+        "The account identifier",
+        "string",
+        "HRIS",
+        "ATS",
+        "LMS",
+        "IAM",
+        "CRM",
+        "MARKETING"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "cross_api_s2_002",
+      "question": "Compare how cursor-based pagination is represented in the list endpoints for HRIS Jobs, LMS Courses, IAM Roles, CRM Accounts, and Marketing Email Templates. Specifically, name the query parameter used as the cursor and the response field where the next cursor value is returned for each API.",
+      "category": "cross_api",
+      "relevant_apis": [
+        "HRIS",
+        "LMS",
+        "IAM",
+        "CRM",
+        "MARKETING"
+      ],
+      "ground_truth_answer": "All of the listed unified APIs use a similar cursor-based pagination pattern, but you have to look at both the endpoint definitions and the x-speakeasy-pagination metadata to see it clearly.\n\nCommon pattern:\n- Request cursor query parameter: next\n- Response cursor field: next\n\nDetails by API:\n\nHRIS (List Jobs)\n- Endpoint: GET /unified/hris/jobs\n- Request cursor parameter:\n  - name: next (in: query, description: \"The unified cursor\", type: string)\n- Response cursor field:\n  - The response schema is HrisJobsPaginated (not fully shown here), but the endpoint has x-speakeasy-pagination:\n    - \"inputs\": [{ \"name\": \"next\", \"in\": \"parameters\", \"type\": \"cursor\" }]\n    - \"outputs\": { \"nextCursor\": \"$.next\" }\n  This tells you the cursor is passed as the next query param and the next cursor is returned in the response field next.\n\nLMS (List Courses)\n- Endpoint: GET /unified/lms/courses\n- Request cursor parameter:\n  - name: next (in: query, description: \"The unified cursor\", type: string)\n- Response cursor field:\n  - Response schema: CoursePaginated, which has a property next (type: string, nullable: true) and a deprecated next_page.\n  - x-speakeasy-pagination:\n    - inputs: name next\n    - outputs: nextCursor: \"$.next\"\n  So LMS Courses also use next as the query cursor and next as the response cursor field.\n\nIAM (List Roles)\n- Endpoint: GET /unified/iam/roles\n- Request cursor parameter:\n  - name: next (in: query, description: \"The unified cursor\", type: string)\n- Response cursor field:\n  - Response schema: IamRolesPaginated (not fully shown), but x-speakeasy-pagination states:\n    - inputs: name next\n    - outputs: nextCursor: \"$.next\"\n  So IAM Roles again use next in the query and next in the response.\n\nCRM (List Accounts)\n- Endpoint: GET /unified/crm/accounts\n- Request cursor parameter:\n  - name: next (in: query, description: \"The unified cursor\", type: string)\n- Response cursor field:\n  - Response schema: AccountsPaginated, which has properties:\n    - next_page (deprecated)\n    - next (type: string, nullable: true)\n  - x-speakeasy-pagination:\n    - inputs: name next\n    - outputs: nextCursor: \"$.next\"\n  Thus CRM Accounts also use next as both the request cursor parameter and the response field containing the next cursor value (with next_page present but deprecated).\n\nMarketing (List Email Templates)\n- Endpoint: GET /unified/marketing/templates/email\n- Request cursor parameter:\n  - name: next (in: query, description: \"The unified cursor\", type: string)\n- Response cursor field:\n  - Response schema: EmailTemplatesPaginated, which has properties:\n    - next_page (deprecated)\n    - next (type: string, nullable: true)\n  - x-speakeasy-pagination:\n    - inputs: name next\n    - outputs: nextCursor: \"$.next\"\n  So Marketing Email Templates follow the same pattern: next query param, next response field.\n\nSummary comparison:\n- HRIS Jobs, LMS Courses, IAM Roles, CRM Accounts, and Marketing Email Templates all:\n  - Accept a cursor in the next query parameter.\n  - Return the next cursor in a response field called next (with some schemas also having a deprecated next_page field).",
+      "ground_truth_chunks": [
+        "/unified/hris/jobs",
+        "/unified/lms/courses",
+        "/unified/iam/roles",
+        "/unified/crm/accounts",
+        "/unified/marketing/templates/email",
+        "CoursePaginated",
+        "AccountsPaginated",
+        "EmailTemplatesPaginated"
+      ],
+      "required_keywords": [
+        "cursor",
+        "pagination",
+        "next",
+        "query parameter",
+        "response field",
+        "x-speakeasy-pagination"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "cross_api_s2_003",
+      "question": "You need to build an internal audit dashboard that shows (a) access-control structure from IAM and (b) learning assignments from the LMS for the same human users. Using only the sampled specs, which resources and fields would you use from IAM and LMS to link a person\u2019s IAM user record to their LMS assignment records, and what limitations or ambiguities remain based on the fields that are actually documented?",
+      "category": "cross_api",
+      "relevant_apis": [
+        "IAM",
+        "LMS"
+      ],
+      "ground_truth_answer": "To relate IAM access-control data to LMS learning assignments for the same human users, you would start from the following resources and fields:\n\nFrom IAM\n- Primary resource: IamUserResult \u2192 IamUser (schema referenced but not expanded in the sample; however, the IAM User GET endpoint exposes a fields parameter that documents key field names).\n- Endpoint:\n  - GET /unified/iam/users/{id}\n- Documented user fields (from the \"fields\" query parameter example):\n  - id: IAM user\u2019s unified ID\n  - remote_id: provider\u2019s user ID\n  - first_name, last_name, name\n  - primary_email_address\n  - username\n  - roles, groups, status, avatar\n  - last_active_at, last_login_at, created_at, updated_at\n  - multi_factor_enabled\n\nFrom LMS\nTwo resources are relevant: Users (people) and Assignments (learning records linked to those people).\n\n1) LMS Users\n- Endpoint:\n  - GET /unified/lms/users\n- User fields (from \"fields\" example):\n  - id: LMS user\u2019s unified ID\n  - remote_id: provider\u2019s user ID\n  - external_reference\n  - active\n  - email\n  - phone_number\n  - created_at, updated_at\n  - name\n\n2) LMS Assignments\n- Endpoint:\n  - GET /unified/lms/users/{id}/assignments\n- Assignment fields (from \"fields\" example):\n  - user_id: \"The user ID associated with this assignment\" (also separately documented as a query filter parameter user_id)\n  - remote_user_id: \"Provider's unique identifier of the user related to the assignment\" (also separately documented as a query filter parameter remote_user_id)\n  - plus other assignment fields: id, remote_id, external_reference, course_id, remote_course_id, status, progress, etc.\n\nHow to link IAM users to LMS assignments\n1. IAM user \u2192 LMS user via identity attributes\n   - Potential join keys:\n     - Email:\n       - IAM: primary_email_address\n       - LMS: email\n     - Provider-side ID:\n       - IAM: remote_id\n       - LMS: remote_id\n   - If your provider or upstream system keeps IAM and LMS users aligned by email or by a shared provider ID, these shared fields provide the best available linkage.\n\n2. LMS user \u2192 LMS assignments\n   - Within LMS, assignments are explicitly tied to users by:\n     - user_id: matches LMS User.id\n       - The assignments endpoint even accepts user_id and remote_user_id as filters, confirming this linkage.\n     - remote_user_id: matches LMS User.remote_id\n   - So once you\u2019ve matched an IAM user to an LMS User (by email or remote_id), all of that person\u2019s learning records can be retrieved from /unified/lms/users/{id}/assignments.\n\nLimitations and ambiguities based on the sampled specs\n- No explicit cross-product link field:\n  - The IAM user and LMS user schemas are separate; there is no explicit field that states \"this IAM user corresponds to this LMS user\" in the sampled documentation.\n  - Any link depends on shared attributes like email or remote_id, which may not be guaranteed unique or globally consistent across systems.\n\n- Email matching may be imperfect:\n  - IAM: primary_email_address\n  - LMS: email\n  - The specs do not guarantee that these are always present or identical, or that one person has a single email across IAM and LMS.\n\n- remote_id semantics are provider-specific:\n  - Both IAM User and LMS User have a remote_id, and LMS Assignments have remote_user_id.\n  - However, the docs do not explicitly state that IAM.remote_id and LMS.remote_id/remote_user_id always refer to the same upstream identity space. In multi-provider or complex integrations this may not hold without additional context.\n\n- No direct link from IAM to assignments:\n  - IAM endpoints (/unified/iam/users/{id}) expose roles and groups for access control but do not include any LMS-specific fields or learning context.\n  - You must go IAM User \u2192 LMS User (via email or remote_id) \u2192 LMS Assignments; the latter step is only defined within the LMS API.\n\nIn practice, based solely on the sampled specs you would:\n- Use IAM User fields primary_email_address or remote_id.\n- Match them to LMS User email or remote_id.\n- Then use the matched LMS User.id or remote_id as user_id or remote_user_id filters to retrieve assignments from /unified/lms/users/{id}/assignments.\nBut the documentation leaves ambiguity about uniqueness and global consistency of these identifiers across IAM and LMS providers.",
+      "ground_truth_chunks": [
+        "/unified/iam/users/{id}",
+        "IamUserResult",
+        "/unified/lms/users",
+        "/unified/lms/users/{id}/assignments",
+        "UsersPaginated",
+        "AssignmentsPaginated"
+      ],
+      "required_keywords": [
+        "IAM user",
+        "LMS user",
+        "assignments",
+        "user_id",
+        "remote_user_id",
+        "primary_email_address",
+        "email",
+        "remote_id",
+        "limitations",
+        "ambiguities"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "id": "out_of_scope_001",
+      "question": "What are the pricing tiers and overage fees for StackOne\u2019s API usage, and how are enterprise discounts structured?",
+      "category": "out_of_scope",
+      "relevant_apis": [],
+      "ground_truth_answer": "This information is not available in the StackOne API documentation; the system should respond that it doesn't know or that pricing details are not available from the API docs.",
+      "ground_truth_chunks": [],
+      "required_keywords": [
+        "don't know",
+        "not available"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "out_of_scope_002",
+      "question": "Does StackOne provide a financially backed SLA, and what are the guaranteed uptime percentage and remedies for downtime incidents?",
+      "category": "out_of_scope",
+      "relevant_apis": [],
+      "ground_truth_answer": "The StackOne API documentation does not contain SLA or uptime guarantee terms, so this information is not available and the system should respond that it doesn't know.",
+      "ground_truth_chunks": [],
+      "required_keywords": [
+        "don't know",
+        "not available"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "out_of_scope_003",
+      "question": "How can I customize the StackOne web dashboard to add custom widgets and role-based access controls for different teams?",
+      "category": "out_of_scope",
+      "relevant_apis": [],
+      "ground_truth_answer": "Dashboard and UI configuration details are not available in the StackOne API documentation, so the correct behavior is to indicate that the system doesn't know this information.",
+      "ground_truth_chunks": [],
+      "required_keywords": [
+        "don't know",
+        "not available"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "out_of_scope_004",
+      "question": "Which third-party CRM platforms does StackOne\u2019s commercial product integrate with out of the box beyond what is exposed via the public API?",
+      "category": "out_of_scope",
+      "relevant_apis": [],
+      "ground_truth_answer": "The API documentation only covers the public API and does not list all commercial third-party integrations, so this information is not available and the system should say it doesn't know.",
+      "ground_truth_chunks": [],
+      "required_keywords": [
+        "don't know",
+        "not available"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "out_of_scope_005",
+      "question": "Does StackOne offer an on-premise deployment option, and if so, what are the hardware requirements and data residency guarantees?",
+      "category": "out_of_scope",
+      "relevant_apis": [],
+      "ground_truth_answer": "Deployment model, on-premise options, and data residency guarantees are not documented in the StackOne API reference, so this information is not available and the system should respond that it doesn't know.",
+      "ground_truth_chunks": [],
+      "required_keywords": [
+        "don't know",
+        "not available"
+      ],
+      "difficulty": "easy"
+    }
+  ]
+}

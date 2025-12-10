@@ -101,18 +101,23 @@ def _wait_with_openai_retry_after(retry_state: RetryCallState) -> float:
     """Custom wait function that uses OpenAI's suggested retry time from headers.
 
     Falls back to exponential backoff if retry time cannot be extracted from headers.
+    Uses progressive backoff multiplier on repeated rate limits to reduce contention.
     """
+    attempt = retry_state.attempt_number
+
     # Try to get retry-after from the response headers
     if retry_state.outcome and retry_state.outcome.exception():
         exc = retry_state.outcome.exception()
         if isinstance(exc, openai.RateLimitError):
             retry_after = _get_retry_after_from_headers(exc)
             if retry_after is not None:
-                # Add a small buffer to be safe
-                return retry_after + 0.5
+                # Progressive backoff: multiply wait time by attempt number
+                # This helps reduce contention when many tasks are retrying
+                # Attempt 1: 1x, Attempt 2: 1.5x, Attempt 3: 2x, etc.
+                multiplier = 1 + (attempt - 1) * 0.5
+                return (retry_after + 0.5) * multiplier
 
     # Fall back to exponential backoff: 2, 4, 8, 16, 32, 60 (capped)
-    attempt = retry_state.attempt_number
     wait_time = min(2 ** attempt, 60)
     return wait_time
 
@@ -152,7 +157,7 @@ def _log_retry_attempt(retry_state: RetryCallState) -> None:
             )
 
     print(
-        f"  [Rate limit] Retry {attempt}/10{exc_info} - "
+        f"  [Rate limit] Retry {attempt}/15{exc_info} - "
         f"waiting {wait_time:.1f}s ({wait_source})..."
     )
 
@@ -161,7 +166,7 @@ def _log_retry_attempt(retry_state: RetryCallState) -> None:
 openai_retry = retry(
     retry=retry_if_exception_type(openai.RateLimitError),
     wait=_wait_with_openai_retry_after,
-    stop=stop_after_attempt(10),  # Increased from 6 for better resilience
+    stop=stop_after_attempt(15),
     before_sleep=_log_retry_attempt,
     reraise=True,
 )

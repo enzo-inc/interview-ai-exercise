@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from ai_exercise.configs.base import get_config
 from ai_exercise.constants import SETTINGS, chroma_client, openai_client
 from ai_exercise.llm.completions import create_prompt, get_completion
 from ai_exercise.llm.embeddings import openai_ef
@@ -21,6 +22,7 @@ from ai_exercise.retrieval.vector_store import create_collection
 
 app = FastAPI()
 
+config = get_config(SETTINGS.config_name)
 collection = create_collection(chroma_client, openai_ef, SETTINGS.collection_name)
 
 
@@ -28,6 +30,20 @@ collection = create_collection(chroma_client, openai_ef, SETTINGS.collection_nam
 def health_check_route() -> HealthRouteOutput:
     """Health check route to check that the API is up."""
     return HealthRouteOutput(status="ok")
+
+
+@app.get("/config")
+def config_route() -> dict:
+    """Get the current system configuration."""
+    return {
+        "name": config.name,
+        "description": config.description,
+        "use_smart_chunking": config.use_smart_chunking,
+        "use_hybrid_search": config.use_hybrid_search,
+        "use_metadata_filtering": config.use_metadata_filtering,
+        "use_reranking": config.use_reranking,
+        "use_unknown_detection": config.use_unknown_detection,
+    }
 
 
 @app.get("/load")
