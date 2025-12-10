@@ -5,6 +5,17 @@ from openai import OpenAI
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
+# All 7 OpenAPI specifications for StackOne
+OPENAPI_SPECS: dict[str, str] = {
+    "stackone": "https://api.eu1.stackone.com/oas/stackone.json",
+    "hris": "https://api.eu1.stackone.com/oas/hris.json",
+    "ats": "https://api.eu1.stackone.com/oas/ats.json",
+    "lms": "https://api.eu1.stackone.com/oas/lms.json",
+    "iam": "https://api.eu1.stackone.com/oas/iam.json",
+    "crm": "https://api.eu1.stackone.com/oas/crm.json",
+    "marketing": "https://api.eu1.stackone.com/oas/marketing.json",
+}
+
 
 class Settings(BaseSettings):
     """Settings for the demo app.

@@ -7,8 +7,7 @@ from ai_exercise.llm.completions import create_prompt, get_completion
 from ai_exercise.llm.embeddings import openai_ef
 from ai_exercise.loading.document_loader import (
     add_documents,
-    build_docs,
-    get_json_data,
+    load_all_specs,
     split_docs,
 )
 from ai_exercise.models import (
@@ -33,11 +32,11 @@ def health_check_route() -> HealthRouteOutput:
 
 @app.get("/load")
 async def load_docs_route() -> LoadDocumentsOutput:
-    """Route to load documents into vector store."""
-    json_data = get_json_data()
-    documents = build_docs(json_data)
+    """Route to load all 7 OpenAPI specs into vector store."""
+    # Load all specs with api_name metadata
+    documents = load_all_specs()
 
-    # split docs
+    # split docs that are too long
     documents = split_docs(documents)
 
     # load documents into vector store

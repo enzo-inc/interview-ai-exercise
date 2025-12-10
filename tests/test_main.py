@@ -1,5 +1,6 @@
 """Tests for `api/main.py`."""
 from fastapi.testclient import TestClient
+
 from ai_exercise.main import app
 
 client = TestClient(app)

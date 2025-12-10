@@ -35,6 +35,34 @@ dev-api:
 start-app:
 	uv run streamlit run demo/main.py
 
+########################################################################################################################
+# Evaluation
+########################################################################################################################
 
+# Run full evaluation for a config (e.g., make eval CONFIG=c0)
+eval:
+	uv run python -m ai_exercise.evals.runner run --config $(CONFIG)
 
+# Run retrieval-only evaluation
+eval-retrieval:
+	uv run python -m ai_exercise.evals.runner run --config $(CONFIG) --type retrieval --no-judges
 
+# Run end-to-end evaluation with LLM judges
+eval-e2e:
+	uv run python -m ai_exercise.evals.runner run --config $(CONFIG) --type e2e
+
+# Compare two or more configs (e.g., make eval-compare CONFIGS=c0,c1)
+eval-compare:
+	uv run python -m ai_exercise.evals.runner compare --configs $(CONFIGS)
+
+# Generate markdown report from all results
+eval-report:
+	uv run python -m ai_exercise.evals.runner report --output reports/
+
+# Generate synthetic evaluation dataset
+generate-eval-questions:
+	uv run python -m ai_exercise.evals.generate_dataset
+
+# Load data into vector store directly
+load-data:
+	uv run python -m ai_exercise.loading.loader
