@@ -89,12 +89,34 @@ with st.sidebar:
     except Exception as e:
         st.warning(f"API not available: {e}")
     
+    # Collection selector
     st.divider()
-    st.warning(
-        "⚠️ **Note:** Ensure that the vector/lexical indices have been "
-        "manually created prior to using this demo. Run `/load` endpoint "
-        "or use the data loader to populate the vector store."
-    )
+    st.subheader("📚 Vector Store")
+    try:
+        coll_response = requests.get("http://localhost/collections", timeout=2)
+        if coll_response.status_code == 200:
+            coll_data = coll_response.json()
+            collections = coll_data.get("collections", [])
+            current = coll_data.get("current", "")
+
+            if collections:
+                selected = st.selectbox(
+                    "Collection",
+                    options=collections,
+                    index=collections.index(current) if current in collections else 0,
+                )
+                # Switch collection if changed
+                if selected != current:
+                    requests.post(
+                        f"http://localhost/collections/{selected}/select", timeout=2
+                    )
+                    st.rerun()
+            else:
+                st.info("No collections found. Load documents first.")
+        else:
+            st.warning("Could not fetch collections from API")
+    except Exception as e:
+        st.warning(f"Could not fetch collections: {e}")
 
 st.title("RAG Example 🤖")
 

@@ -24,7 +24,10 @@ from ai_exercise.retrieval.vector_store import create_collection
 app = FastAPI()
 
 config = get_config(SETTINGS.config_name)
-collection = create_collection(chroma_client, openai_ef, SETTINGS.collection_name)
+
+# Track current collection (mutable at runtime)
+current_collection_name = SETTINGS.collection_name
+collection = create_collection(chroma_client, openai_ef, current_collection_name)
 
 
 @app.get("/health")
@@ -47,9 +50,38 @@ def config_route() -> dict:
     }
 
 
+@app.get("/collections")
+def list_collections() -> dict:
+    """List all available collections and current selection."""
+    # In ChromaDB v0.6.0+, list_collections() returns names directly as strings
+    collections = chroma_client.list_collections()
+    return {
+        "collections": collections,
+        "current": current_collection_name,
+    }
+
+
+@app.post("/collections/{name}/select")
+def select_collection(name: str) -> dict:
+    """Switch to a different collection."""
+    global collection, current_collection_name
+    collection = create_collection(chroma_client, openai_ef, name)
+    current_collection_name = name
+    return {"status": "ok", "collection": name}
+
+
 @app.get("/load")
-async def load_docs_route() -> LoadDocumentsOutput:
-    """Route to load all 7 OpenAPI specs into vector store."""
+async def load_docs_route(collection_name: str | None = None) -> LoadDocumentsOutput:
+    """Route to load all 7 OpenAPI specs into vector store.
+
+    Args:
+        collection_name: Optional collection name to load into. If not specified,
+                        loads into the current collection.
+    """
+    # Determine target collection
+    target_name = collection_name or current_collection_name
+    target_collection = create_collection(chroma_client, openai_ef, target_name)
+
     # Load all specs with api_name metadata
     documents = load_all_specs()
 
@@ -57,10 +89,10 @@ async def load_docs_route() -> LoadDocumentsOutput:
     documents = split_docs(documents)
 
     # load documents into vector store
-    add_documents(collection, documents)
+    add_documents(target_collection, documents)
 
     # check the number of documents in the collection
-    print(f"Number of documents in collection: {collection.count()}")
+    print(f"Number of documents in collection '{target_name}': {target_collection.count()}")
 
     return LoadDocumentsOutput(status="ok")
 
