@@ -21,8 +21,10 @@ class EvalQuestion(BaseModel):
     ground_truth_answer: str = Field(
         description="The expected correct answer based on the API documentation"
     )
-    ground_truth_chunks: list[str] = Field(
-        description="Paths or schema names that contain the answer"
+    relevant_structural_ids: list[str] = Field(
+        description="Structural IDs that identify relevant chunks (config-agnostic). "
+        "Format: 'api_name.section.key[.method]' e.g., 'stackone.paths./connect_sessions.post' "
+        "or 'stackone.components.ConnectSessionCreate'"
     )
     required_keywords: list[str] = Field(
         description="Keywords that should appear in a correct answer"

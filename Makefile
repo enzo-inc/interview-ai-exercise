@@ -63,6 +63,6 @@ eval-report:
 generate-eval-questions:
 	uv run python -m ai_exercise.evals.generate_dataset
 
-# Load data into vector store directly
+# Load data into vector store for a specific config (e.g., make load-data CONFIG=c0)
 load-data:
-	uv run python -m ai_exercise.loading.loader
+	uv run python -m ai_exercise.loading.loader $(CONFIG)

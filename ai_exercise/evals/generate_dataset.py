@@ -577,8 +577,10 @@ CRITICAL REQUIREMENTS:
 1. Questions MUST be answerable from the API content provided above
 2. Ground truth answers MUST be factually accurate based on the spec details shown
 3. Required keywords should be specific terms from the spec that must appear
-4. Ground truth chunks should reference specific paths (e.g., "/unified/hris/employees")
-   or schema names (e.g., "EmployeeResult") from the content shown
+4. relevant_structural_ids MUST use the format: "api_name.paths./path.method" for endpoints
+   or "api_name.components.SchemaName" for schemas. Examples:
+   - "{api_name}.paths./unified/hris/employees.get" (for GET /unified/hris/employees)
+   - "{api_name}.components.EmployeeResult" (for EmployeeResult schema)
 5. IDs should follow format: {id_prefix}_XXX (e.g., {id_prefix}_001)
 6. Vary difficulty levels (easy, medium, hard)
 7. Make questions specific and unambiguous
@@ -604,7 +606,7 @@ Do NOT generate questions about:
                 category=category,
                 relevant_apis=[api_name],
                 ground_truth_answer=q.ground_truth_answer,
-                ground_truth_chunks=q.ground_truth_chunks,
+                relevant_structural_ids=q.relevant_structural_ids,
                 required_keywords=q.required_keywords,
                 difficulty=q.difficulty,
             )
@@ -647,8 +649,9 @@ CRITICAL REQUIREMENTS:
 1. Questions MUST be answerable using ONLY the sampled endpoints/schemas shown
 2. Questions MUST require information from at least 2 different APIs
 3. Ground truth answers MUST be factually accurate based on the spec details
-4. Ground truth chunks should reference paths (e.g., "/unified/hris/employees")
-   or schema names from MULTIPLE APIs in the content above
+4. relevant_structural_ids MUST use format: "api_name.paths./path.method" for endpoints
+   or "api_name.components.SchemaName" for schemas. Include IDs from MULTIPLE APIs.
+   Examples: "hris.paths./unified/hris/employees.get", "ats.components.CandidateResult"
 5. relevant_apis should list ALL APIs whose content was used to form the answer
 6. IDs should follow format: {id_prefix}_XXX
 7. Vary difficulty levels (easy, medium, hard)
@@ -682,7 +685,7 @@ Do NOT generate questions about:
                 category="cross_api",
                 relevant_apis=relevant,
                 ground_truth_answer=q.ground_truth_answer,
-                ground_truth_chunks=q.ground_truth_chunks,
+                relevant_structural_ids=q.relevant_structural_ids,
                 required_keywords=q.required_keywords,
                 difficulty=q.difficulty,
             )
@@ -710,8 +713,9 @@ Requirements:
 1. Questions should sound reasonable but be unanswerable from API docs
 2. relevant_apis should be empty []
 3. ground_truth_answer should indicate the information is not available
-4. required_keywords should include phrases like "don't know", "not available"
-5. IDs should follow format: out_of_scope_XXX
+4. relevant_structural_ids should be empty [] (no relevant chunks exist)
+5. required_keywords should include phrases like "don't know", "not available"
+6. IDs should follow format: out_of_scope_XXX
 """
 
     questions = await _call_openai_parse(prompt)
@@ -727,7 +731,7 @@ Requirements:
                 category="out_of_scope",
                 relevant_apis=[],
                 ground_truth_answer=q.ground_truth_answer,
-                ground_truth_chunks=[],
+                relevant_structural_ids=[],
                 required_keywords=q.required_keywords
                 or ["don't know", "not available"],
                 difficulty="easy",

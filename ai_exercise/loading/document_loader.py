@@ -10,6 +10,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from ai_exercise.constants import OPENAPI_SPECS, SETTINGS
 from ai_exercise.loading.chunk_json import chunk_data_with_ids
 from ai_exercise.loading.smart_chunker import build_smart_chunks
+from ai_exercise.loading.structural_ids import (
+    generate_structural_id,
+    get_structural_id_for_component,
+    get_structural_ids_for_path,
+)
 from ai_exercise.models import Document
 
 
@@ -42,20 +47,40 @@ def document_json_array_with_ids(
         api_name: The name of the API this chunk belongs to.
 
     Returns:
-        List of Document objects with metadata including chunk_id and resource_name.
+        List of Document objects with metadata including chunk_id, resource_name,
+        and covers (list of structural IDs this chunk contains).
     """
-    return [
-        Document(
-            page_content=json.dumps(chunk_data),
-            metadata={
-                "source": source,
-                "api_name": api_name,
-                "chunk_id": chunk_id,
-                "resource_name": original_key,
-            },
+    documents = []
+    for chunk_id, original_key, chunk_data in chunks_with_ids:
+        # Compute structural IDs this chunk covers
+        covers: list[str] = []
+
+        if source == "paths":
+            # For paths, chunk_data is {"/path": {methods...}}
+            # Extract all HTTP methods and generate structural IDs
+            path_item = chunk_data.get(original_key, {})
+            covers = get_structural_ids_for_path(api_name, original_key, path_item)
+        elif source == "components":
+            # For components, it's a single schema
+            covers = [get_structural_id_for_component(api_name, original_key)]
+        elif source == "webhooks":
+            # For webhooks, generate a webhook structural ID
+            covers = [generate_structural_id(api_name, "webhooks", original_key)]
+
+        documents.append(
+            Document(
+                page_content=json.dumps(chunk_data),
+                metadata={
+                    "source": source,
+                    "api_name": api_name,
+                    "chunk_id": chunk_id,
+                    "resource_name": original_key,
+                    "covers": json.dumps(covers),  # Serialize list as JSON string
+                },
+            )
         )
-        for chunk_id, original_key, chunk_data in chunks_with_ids
-    ]
+
+    return documents
 
 
 def build_docs(data: dict[str, Any], api_name: str) -> list[Document]:

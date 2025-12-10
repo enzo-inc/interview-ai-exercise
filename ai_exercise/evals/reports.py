@@ -46,7 +46,7 @@ def generate_markdown_report(results_dir: Path, output_dir: Path) -> Path:
         "",
     ])
 
-    retrieval_headers = ["Config", "Hit Rate@K", "MRR", "Precision@K", "Recall@K"]
+    retrieval_headers = ["Config", "Hit Rate@K", "MRR"]
     retrieval_rows = []
     for name, data in configs_data:
         r = data["summary"]["retrieval"]
@@ -54,8 +54,6 @@ def generate_markdown_report(results_dir: Path, output_dir: Path) -> Path:
             name,
             f"{r['hit_rate_at_k']:.3f}",
             f"{r['mrr']:.3f}",
-            f"{r['precision_at_k']:.3f}",
-            f"{r['recall_at_k']:.3f}",
         ])
 
     report_lines.append(
@@ -69,49 +67,17 @@ def generate_markdown_report(results_dir: Path, output_dir: Path) -> Path:
         "",
     ])
 
-    answer_headers = [
-        "Config", "Keyword Cov.", "Accuracy (1-5)",
-        "Completeness (1-5)", "Hallucination Rate",
-    ]
+    answer_headers = ["Config", "Accuracy (1-5)"]
     answer_rows = []
     for name, data in configs_data:
         a = data["summary"]["answer_quality"]
         answer_rows.append([
             name,
-            f"{a['keyword_coverage']:.3f}",
             f"{a['accuracy_score']:.2f}",
-            f"{a['completeness_score']:.2f}",
-            f"{a['hallucination_rate']:.3f}",
         ])
 
     report_lines.append(
         tabulate(answer_rows, headers=answer_headers, tablefmt="pipe")
-    )
-    report_lines.append("")
-
-    # Abstention metrics table
-    report_lines.extend([
-        "## Abstention Metrics",
-        "",
-    ])
-
-    abstention_headers = [
-        "Config", "Correct Abstention", "False Abstention",
-        "Out-of-Scope", "In-Scope",
-    ]
-    abstention_rows = []
-    for name, data in configs_data:
-        ab = data["summary"]["abstention"]
-        abstention_rows.append([
-            name,
-            f"{ab['correct_abstention_rate']:.3f}",
-            f"{ab['false_abstention_rate']:.3f}",
-            str(int(ab.get("out_of_scope_count", 0))),
-            str(int(ab.get("in_scope_count", 0))),
-        ])
-
-    report_lines.append(
-        tabulate(abstention_rows, headers=abstention_headers, tablefmt="pipe")
     )
     report_lines.append("")
 
@@ -128,15 +94,12 @@ def generate_markdown_report(results_dir: Path, output_dir: Path) -> Path:
         ])
 
         if "results_by_category" in data:
-            cat_headers = [
-                "Category", "Count", "Keyword Cov.", "Accuracy", "Retrieval Hit",
-            ]
+            cat_headers = ["Category", "Count", "Accuracy", "Retrieval Hit"]
             cat_rows = []
             for cat, cat_data in sorted(data["results_by_category"].items()):
                 cat_rows.append([
                     cat,
                     str(cat_data["count"]),
-                    f"{cat_data['avg_keyword_coverage']:.3f}",
                     f"{cat_data['avg_accuracy']:.2f}",
                     f"{cat_data['retrieval_hit_rate']:.3f}",
                 ])
@@ -178,12 +141,7 @@ def format_comparison_table(
     metrics = [
         ("Hit Rate@K", _get_retrieval("hit_rate_at_k")),
         ("MRR", _get_retrieval("mrr")),
-        ("Precision@K", _get_retrieval("precision_at_k")),
-        ("Recall@K", _get_retrieval("recall_at_k")),
-        ("Keyword Coverage", _get_answer("keyword_coverage")),
         ("Accuracy (1-5)", _get_answer("accuracy_score")),
-        ("Completeness (1-5)", _get_answer("completeness_score")),
-        ("Hallucination Rate", _get_answer("hallucination_rate")),
     ]
 
     headers = ["Metric"] + [name for name, _ in configs_data]

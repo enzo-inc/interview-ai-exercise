@@ -8,6 +8,10 @@ from typing import Any
 
 from ai_exercise.loading.chunk_json import generate_chunk_id
 from ai_exercise.loading.ref_resolver import resolve_refs_in_object
+from ai_exercise.loading.structural_ids import (
+    generate_structural_id,
+    get_structural_id_for_component,
+)
 from ai_exercise.models import Document
 
 
@@ -278,6 +282,12 @@ Request Body: {request_body_text}
     # Generate deterministic chunk ID
     chunk_id = generate_chunk_id(api_name, "paths", f"{method}_{path}")
 
+    # Generate structural ID for this endpoint
+    endpoint_structural_id = generate_structural_id(api_name, "paths", path, method)
+    covers = [endpoint_structural_id]
+
+    import json as json_module
+
     return Document(
         page_content=chunk_content,
         metadata={
@@ -290,6 +300,7 @@ Request Body: {request_body_text}
             "chunk_type": "endpoint",
             "chunk_id": chunk_id,
             "resource_name": path,
+            "covers": json_module.dumps(covers),  # Serialize list as JSON string
         },
     )
 
@@ -350,6 +361,12 @@ Properties:
 
         chunk_id = generate_chunk_id(api_name, "components", schema_name)
 
+        # Generate structural ID for this schema
+        schema_structural_id = get_structural_id_for_component(api_name, schema_name)
+        covers = [schema_structural_id]
+
+        import json as json_module
+
         documents.append(
             Document(
                 page_content=chunk_content,
@@ -360,6 +377,7 @@ Properties:
                     "chunk_type": "schema",
                     "chunk_id": chunk_id,
                     "resource_name": schema_name,
+                    "covers": json_module.dumps(covers),  # Serialize list as JSON string
                 },
             )
         )
