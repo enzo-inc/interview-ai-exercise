@@ -26,7 +26,10 @@ def get_relevant_chunks(
 
 
 def get_relevant_chunks_with_ids(
-    collection: chromadb.Collection, query: str, k: int
+    collection: chromadb.Collection,
+    query: str,
+    k: int,
+    api_filter: list[str] | None = None,
 ) -> list[RetrievedChunk]:
     """Retrieve k most relevant chunks with their IDs and metadata.
 
@@ -34,14 +37,25 @@ def get_relevant_chunks_with_ids(
         collection: ChromaDB collection to query.
         query: The query text.
         k: Number of results to return.
+        api_filter: Optional list of API names to filter by.
+            If provided, only chunks from these APIs are returned.
 
     Returns:
         List of RetrievedChunk objects with content, chunk_id, and metadata.
     """
+    # Build where clause for API filtering
+    where = None
+    if api_filter and len(api_filter) > 0:
+        if len(api_filter) == 1:
+            where = {"api_name": api_filter[0]}
+        else:
+            where = {"api_name": {"$in": api_filter}}
+
     results = collection.query(
         query_texts=[query],
         n_results=k,
         include=["documents", "metadatas"],
+        where=where,
     )
 
     chunks = []

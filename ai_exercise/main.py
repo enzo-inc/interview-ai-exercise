@@ -22,6 +22,7 @@ from ai_exercise.models import (
 )
 from ai_exercise.retrieval.bm25_index import BM25Index
 from ai_exercise.retrieval.hybrid_search import get_relevant_chunks_hybrid
+from ai_exercise.retrieval.intent_detection import detect_query_intent
 from ai_exercise.retrieval.retrieval import get_relevant_chunks_with_ids
 from ai_exercise.retrieval.vector_store import create_collection
 
@@ -204,6 +205,15 @@ async def load_docs_route(
 @app.post("/chat")
 def chat_route(chat_query: ChatQuery) -> ChatOutput:
     """Chat route to chat with the API."""
+    # Detect query intent for metadata filtering if enabled
+    api_filter: list[str] | None = None
+    if config.use_metadata_filtering:
+        api_filter = detect_query_intent(
+            client=openai_client,
+            query=chat_query.query,
+        )
+        print(f"Detected intent - filtering to APIs: {api_filter}")
+
     # Get relevant chunks - use hybrid search if enabled and BM25 index is available
     if config.use_hybrid_search and current_bm25_index is not None:
         relevant_chunks = get_relevant_chunks_hybrid(
@@ -211,6 +221,7 @@ def chat_route(chat_query: ChatQuery) -> ChatOutput:
             bm25_index=current_bm25_index,
             query=chat_query.query,
             k=SETTINGS.k_neighbors,
+            api_filter=api_filter,
         )
         print(
             f"Using hybrid search (BM25 + Vector) for query: "
@@ -218,7 +229,10 @@ def chat_route(chat_query: ChatQuery) -> ChatOutput:
         )
     else:
         relevant_chunks = get_relevant_chunks_with_ids(
-            collection=collection, query=chat_query.query, k=SETTINGS.k_neighbors
+            collection=collection,
+            query=chat_query.query,
+            k=SETTINGS.k_neighbors,
+            api_filter=api_filter,
         )
         if config.use_hybrid_search and current_bm25_index is None:
             print(

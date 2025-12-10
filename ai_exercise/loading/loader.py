@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 
+import ai_exercise.configs  # noqa: F401 - Register all configs
 from ai_exercise.configs.base import get_config
 from ai_exercise.constants import chroma_client
 from ai_exercise.llm.embeddings import openai_ef

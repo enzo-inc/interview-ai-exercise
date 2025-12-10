@@ -58,12 +58,15 @@ class HybridSearcher:
         self.bm25_index = bm25_index
         self.alpha = alpha
 
-    def search(self, query: str, k: int = 5) -> list[RetrievedChunk]:
+    def search(
+        self, query: str, k: int = 5, api_filter: list[str] | None = None
+    ) -> list[RetrievedChunk]:
         """Perform hybrid search combining BM25 and vector results.
 
         Args:
             query: The search query.
             k: Number of results to return.
+            api_filter: Optional list of API names to filter by.
 
         Returns:
             List of RetrievedChunk objects with combined relevance.
@@ -71,15 +74,33 @@ class HybridSearcher:
         # Get more candidates from each source to ensure good coverage
         n_candidates = k * 3
 
+        # Build where clause for API filtering
+        where = None
+        if api_filter and len(api_filter) > 0:
+            if len(api_filter) == 1:
+                where = {"api_name": api_filter[0]}
+            else:
+                where = {"api_name": {"$in": api_filter}}
+
         # 1. Vector search via ChromaDB
         vector_results = self.collection.query(
             query_texts=[query],
             n_results=n_candidates,
             include=["documents", "metadatas"],
+            where=where,
         )
 
         # 2. BM25 search
         bm25_results = self.bm25_index.search(query, k=n_candidates)
+
+        # Filter BM25 results by API if filter is provided
+        # Doc IDs follow pattern: {api_name}_{source}_{key}
+        if api_filter:
+            bm25_results = [
+                (doc_id, score)
+                for doc_id, score in bm25_results
+                if any(doc_id.startswith(f"{api}_") for api in api_filter)
+            ]
 
         # 3. Build document metadata lookup from vector results
         doc_metadata: dict[str, dict[str, Any]] = {}
@@ -147,6 +168,7 @@ def get_relevant_chunks_hybrid(
     query: str,
     k: int = 5,
     alpha: float = 0.5,
+    api_filter: list[str] | None = None,
 ) -> list[RetrievedChunk]:
     """Convenience function for hybrid search.
 
@@ -156,9 +178,10 @@ def get_relevant_chunks_hybrid(
         query: The search query.
         k: Number of results to return.
         alpha: Weight for vector search (0.5 = equal weight).
+        api_filter: Optional list of API names to filter by.
 
     Returns:
         List of RetrievedChunk objects.
     """
     searcher = HybridSearcher(collection, bm25_index, alpha)
-    return searcher.search(query, k)
+    return searcher.search(query, k, api_filter=api_filter)
