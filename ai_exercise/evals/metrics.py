@@ -39,7 +39,7 @@ class EvalResult:
     ground_truth_chunk_ids: list[str]  # Normalized chunk IDs for matching
     relevant_apis: list[str]  # APIs relevant to this question
     retrieval_hit: bool
-    first_relevant_rank: int | None  # Rank of first relevant chunk (1-indexed), None if no hit
+    first_relevant_rank: int | None  # Rank of first relevant chunk, None if no hit
     keyword_coverage: float
     accuracy_score: int
     completeness_score: int
@@ -54,9 +54,7 @@ def chunk_id_matches(retrieved_id: str, gt_id: str) -> bool:
     if retrieved_id == gt_id:
         return True
     # Handle split chunks - retrieved might be "base_id_partN"
-    if retrieved_id.startswith(gt_id + "_part"):
-        return True
-    return False
+    return retrieved_id.startswith(gt_id + "_part")
 
 
 def hit_rate_at_k(
@@ -271,8 +269,12 @@ def compute_retrieval_metrics(
     retrieved_chunk_ids_list = [r.retrieved_chunk_ids for r in in_scope_results]
     ground_truth_chunk_ids_list = [r.ground_truth_chunk_ids for r in in_scope_results]
 
-    precision_value = precision_at_k(retrieved_chunk_ids_list, ground_truth_chunk_ids_list, k)
-    recall_value = recall_at_k(retrieved_chunk_ids_list, ground_truth_chunk_ids_list, k)
+    precision_value = precision_at_k(
+        retrieved_chunk_ids_list, ground_truth_chunk_ids_list, k
+    )
+    recall_value = recall_at_k(
+        retrieved_chunk_ids_list, ground_truth_chunk_ids_list, k
+    )
 
     return RetrievalMetrics(
         hit_rate_at_k=hit_rate,

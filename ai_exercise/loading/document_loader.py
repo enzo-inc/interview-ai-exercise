@@ -133,7 +133,10 @@ def add_documents(
     for i in range(0, total, batch_size):
         batch = docs[i : i + batch_size]
         # Use chunk_id from metadata as ChromaDB ID
-        ids = [doc.metadata.get("chunk_id", f"doc_{i + j}") for j, doc in enumerate(batch)]
+        ids = [
+            doc.metadata.get("chunk_id", f"doc_{i + j}")
+            for j, doc in enumerate(batch)
+        ]
         collection.add(
             documents=[doc.page_content for doc in batch],
             metadatas=[doc.metadata or {} for doc in batch],

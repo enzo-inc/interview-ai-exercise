@@ -46,10 +46,12 @@ def get_relevant_chunks_with_ids(
 
     chunks = []
     documents = results["documents"][0]
-    metadatas = results["metadatas"][0] if results["metadatas"] else [{}] * len(documents)
+    metadatas = (
+        results["metadatas"][0] if results["metadatas"] else [{}] * len(documents)
+    )
     ids = results["ids"][0]
 
-    for doc, metadata, chunk_id in zip(documents, metadatas, ids):
+    for doc, metadata, chunk_id in zip(documents, metadatas, ids, strict=False):
         chunks.append(
             RetrievedChunk(
                 content=doc,

@@ -23,6 +23,12 @@ MAX_PATHS_PER_SAMPLE = 15  # Sample this many paths per generation call
 MAX_SCHEMAS_PER_SAMPLE = 20  # Sample this many schemas per generation call
 SAMPLES_PER_API = 3  # Number of different random samples per API to ensure coverage
 
+# Cross-API sampling configuration
+CROSS_API_PATHS_PER_API = 5  # Paths from each API for cross-API questions
+CROSS_API_SCHEMAS_PER_API = 5  # Schemas from each API for cross-API questions
+CROSS_API_SAMPLES = 3  # Number of cross-API samples to generate questions from
+CROSS_API_QUESTIONS_PER_SAMPLE = 3  # Questions to generate per cross-API sample
+
 # Initialize async OpenAI client
 async_openai_client = AsyncOpenAI(api_key=SETTINGS.openai_api_key.get_secret_value())
 
@@ -159,8 +165,10 @@ def extract_spec_summary(spec_data: dict[str, Any], api_name: str) -> str:
         paths = spec_data["paths"]
         path_list = []
         for path, methods in paths.items():
-            method_names = [m.upper() for m in methods.keys()
-                           if m in ["get", "post", "put", "patch", "delete"]]
+            method_names = [
+                m.upper() for m in methods
+                if m in ["get", "post", "put", "patch", "delete"]
+            ]
             if method_names:
                 path_list.append(f"{path} [{', '.join(method_names)}]")
         summary_parts.append(f"Endpoints ({len(paths)} total):")
@@ -189,10 +197,14 @@ def format_sampled_spec_for_llm(sampled_spec: dict[str, Any]) -> str:
 
     api_name = sampled_spec.get("api_name", "unknown")
     parts.append(f"=== {api_name.upper()} API (Sampled Content) ===")
-    parts.append(f"Note: This is a random sample of {len(sampled_spec.get('paths', {}))} "
-                 f"paths from {sampled_spec.get('total_paths_in_spec', '?')} total, "
-                 f"and {len(sampled_spec.get('schemas', {}))} schemas from "
-                 f"{sampled_spec.get('total_schemas_in_spec', '?')} total.\n")
+    n_paths = len(sampled_spec.get("paths", {}))
+    total_paths = sampled_spec.get("total_paths_in_spec", "?")
+    n_schemas = len(sampled_spec.get("schemas", {}))
+    total_schemas = sampled_spec.get("total_schemas_in_spec", "?")
+    parts.append(
+        f"Note: This is a random sample of {n_paths} paths from {total_paths} "
+        f"total, and {n_schemas} schemas from {total_schemas} total.\n"
+    )
 
     # Include server info
     if sampled_spec.get("servers"):
@@ -218,6 +230,107 @@ def format_sampled_spec_for_llm(sampled_spec: dict[str, Any]) -> str:
     if sampled_spec.get("webhooks"):
         parts.append("\nWEBHOOKS:")
         parts.append(json.dumps(sampled_spec["webhooks"], indent=2))
+
+    return "\n".join(parts)
+
+
+def sample_multi_api_content(
+    all_specs: dict[str, dict[str, Any]],
+    paths_per_api: int = CROSS_API_PATHS_PER_API,
+    schemas_per_api: int = CROSS_API_SCHEMAS_PER_API,
+    seed: int | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Sample paths and schemas from ALL APIs for cross-API question generation.
+
+    Returns a dict mapping api_name -> sampled content with full details.
+
+    Args:
+        all_specs: Dict of all OpenAPI specs keyed by API name
+        paths_per_api: Number of paths to sample from each API
+        schemas_per_api: Number of schemas to sample from each API
+        seed: Random seed for reproducibility (None for random)
+
+    Returns:
+        Dict mapping api_name to sampled spec content
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    sampled_apis = {}
+
+    for api_name, spec_data in all_specs.items():
+        sampled = {
+            "api_name": api_name,
+            "info": spec_data.get("info", {}),
+        }
+
+        # Sample paths randomly
+        all_paths = list(spec_data.get("paths", {}).items())
+        if len(all_paths) > paths_per_api:
+            sampled_paths = random.sample(all_paths, paths_per_api)
+        else:
+            sampled_paths = all_paths
+        sampled["paths"] = dict(sampled_paths)
+        sampled["total_paths_in_spec"] = len(all_paths)
+
+        # Sample schemas randomly
+        all_schemas = list(spec_data.get("components", {}).get("schemas", {}).items())
+        if len(all_schemas) > schemas_per_api:
+            sampled_schemas = random.sample(all_schemas, schemas_per_api)
+        else:
+            sampled_schemas = all_schemas
+        sampled["schemas"] = dict(sampled_schemas)
+        sampled["total_schemas_in_spec"] = len(all_schemas)
+
+        sampled_apis[api_name] = sampled
+
+    return sampled_apis
+
+
+def format_multi_api_sampled_spec_for_llm(
+    sampled_apis: dict[str, dict[str, Any]]
+) -> str:
+    """Format sampled content from multiple APIs for LLM context.
+
+    Provides full JSON details for sampled paths and schemas from each API,
+    enabling accurate cross-API question and answer generation.
+
+    Args:
+        sampled_apis: Dict mapping api_name to sampled spec content
+
+    Returns:
+        Formatted string with all sampled API content
+    """
+    parts = []
+    api_names = list(sampled_apis.keys())
+    parts.append(f"=== SAMPLED CONTENT FROM {len(api_names)} APIs ===")
+    parts.append(f"APIs included: {', '.join(api_names).upper()}\n")
+
+    for api_name, sampled in sampled_apis.items():
+        parts.append(f"\n{'=' * 40}")
+        parts.append(f"API: {api_name.upper()}")
+        parts.append(f"Sampled {len(sampled.get('paths', {}))} paths from "
+                     f"{sampled.get('total_paths_in_spec', '?')} total")
+        parts.append(f"Sampled {len(sampled.get('schemas', {}))} schemas from "
+                     f"{sampled.get('total_schemas_in_spec', '?')} total")
+        parts.append("=" * 40)
+
+        # Include API info
+        if sampled.get("info"):
+            parts.append(f"\nAPI Info: {sampled['info'].get('title', api_name)}")
+            if sampled["info"].get("description"):
+                desc = sampled["info"]["description"][:200]
+                parts.append(f"Description: {desc}...")
+
+        # Include sampled paths with FULL details
+        if sampled.get("paths"):
+            parts.append(f"\nENDPOINTS ({api_name.upper()}):")
+            parts.append(json.dumps(sampled["paths"], indent=2))
+
+        # Include sampled schemas with FULL details
+        if sampled.get("schemas"):
+            parts.append(f"\nSCHEMAS ({api_name.upper()}):")
+            parts.append(json.dumps(sampled["schemas"], indent=2))
 
     return "\n".join(parts)
 
@@ -288,7 +401,7 @@ for the {api_name.upper()} API based on the sampled content above.
 CRITICAL REQUIREMENTS:
 1. Questions MUST be answerable from the API content provided above
 2. Ground truth answers MUST be factually accurate based on the spec details shown
-3. Required keywords should be specific terms from the spec that must appear in correct answers
+3. Required keywords should be specific terms from the spec that must appear
 4. Ground truth chunks should reference specific paths (e.g., "/unified/hris/employees")
    or schema names (e.g., "EmployeeResult") from the content shown
 5. IDs should follow format: {id_prefix}_XXX (e.g., {id_prefix}_001)
@@ -333,31 +446,53 @@ Do NOT generate questions about:
 
 async def generate_cross_api_questions_async(
     all_specs: dict[str, dict[str, Any]],
+    count: int = CROSS_API_QUESTIONS_PER_SAMPLE,
+    id_prefix: str = "cross_api",
+    sample_seed: int | None = None,
 ) -> list[EvalQuestion]:
-    """Generate questions that span multiple APIs."""
-    combined_summary = "\n\n".join(
-        extract_spec_summary(spec, name) for name, spec in all_specs.items()
-    )
+    """Generate questions that span multiple APIs using actual sampled content.
+
+    Instead of using summaries, samples actual endpoints and schemas from ALL APIs
+    to provide detailed context for generating accurate cross-API questions.
+
+    Args:
+        all_specs: Dict of all OpenAPI specs keyed by API name
+        count: Number of questions to generate
+        id_prefix: Prefix for question IDs
+        sample_seed: Random seed for reproducible sampling (None for random)
+    """
+    # Sample actual content from all APIs
+    sampled_apis = sample_multi_api_content(all_specs, seed=sample_seed)
+    combined_context = format_multi_api_sampled_spec_for_llm(sampled_apis)
+    api_names = list(sampled_apis.keys())
 
     prompt = f"""You are generating evaluation questions for a RAG system \
 about StackOne APIs.
 
-AVAILABLE APIs AND THEIR SUMMARIES:
-{combined_summary}
+{combined_context}
 
-Generate exactly 5 cross-API questions that require knowledge \
-from multiple API specifications.
+Generate exactly {count} cross-API questions that require knowledge \
+from multiple API specifications shown above.
 
-Examples of cross-API questions:
-- "Which APIs support webhook events?"
-- "What is the common pagination pattern across all APIs?"
-- "How do I transfer data from ATS to HRIS when hiring a candidate?"
+CRITICAL REQUIREMENTS:
+1. Questions MUST be answerable using ONLY the sampled endpoints/schemas shown
+2. Questions MUST require information from at least 2 different APIs
+3. Ground truth answers MUST be factually accurate based on the spec details
+4. Ground truth chunks should reference paths (e.g., "/unified/hris/employees")
+   or schema names from MULTIPLE APIs in the content above
+5. relevant_apis should list ALL APIs whose content was used to form the answer
+6. IDs should follow format: {id_prefix}_XXX
+7. Vary difficulty levels (easy, medium, hard)
 
-Requirements:
-1. Questions must span at least 2 different APIs
-2. relevant_apis should list ALL APIs needed to answer
-3. Ground truth should synthesize information from multiple specs
-4. IDs should follow format: cross_api_XXX
+Examples of good cross-API questions (adapt based on actual content shown):
+- "What fields are common between Employee in HRIS and Candidate in ATS?"
+- "How do pagination parameters differ between the HRIS and CRM APIs?"
+- "Which APIs use the same authentication header format?"
+
+Do NOT generate questions about:
+- Information not visible in the sampled content above
+- Paths or schemas that aren't in the sampled content
+- Generic questions that could be answered from a single API
 """
 
     response = await async_openai_client.beta.chat.completions.parse(
@@ -372,12 +507,17 @@ Requirements:
 
     result = []
     for i, q in enumerate(questions.questions):
+        # Ensure relevant_apis contains at least 2 APIs from the sampled set
+        relevant = q.relevant_apis if q.relevant_apis else api_names[:2]
+        if len(relevant) < 2:
+            relevant = api_names[:2]  # Default to first 2 APIs if not specified
+
         result.append(
             EvalQuestion(
-                id=f"cross_api_{i + 1:03d}",
+                id=f"{id_prefix}_{i + 1:03d}",
                 question=q.question,
                 category="cross_api",
-                relevant_apis=q.relevant_apis if q.relevant_apis else ["stackone"],
+                relevant_apis=relevant,
                 ground_truth_answer=q.ground_truth_answer,
                 ground_truth_chunks=q.ground_truth_chunks,
                 required_keywords=q.required_keywords,
@@ -450,7 +590,7 @@ async def generate_eval_dataset_async() -> GeneratedDataset:
     print("Generating Synthetic Evaluation Dataset")
     print("=" * 60)
     print(f"Using {SAMPLES_PER_API} random samples per API for diverse coverage")
-    print(f"Each sample includes {MAX_PATHS_PER_SAMPLE} paths and {MAX_SCHEMAS_PER_SAMPLE} schemas")
+    print(f"Each sample: {MAX_PATHS_PER_SAMPLE} paths,{MAX_SCHEMAS_PER_SAMPLE} schemas")
 
     # Load all specs in parallel
     print("\nLoading OpenAPI specifications...")
@@ -491,14 +631,30 @@ async def generate_eval_dataset_async() -> GeneratedDataset:
                     id_prefix = f"{category}_{api_name}_s{sample_idx}"
                     generation_tasks.append(
                         generate_questions_for_api_async(
-                            api_name, spec_data, category, questions_per_sample, id_prefix,
-                            sample_seed=sample_counter
+                            api_name,
+                            spec_data,
+                            category,
+                            questions_per_sample,
+                            id_prefix,
+                            sample_seed=sample_counter,
                         )
                     )
                     sample_counter += 1
 
-    # Add cross-API and out-of-scope tasks
-    generation_tasks.append(generate_cross_api_questions_async(all_specs))
+    # Add cross-API tasks with multiple samples for diverse coverage
+    for sample_idx in range(CROSS_API_SAMPLES):
+        id_prefix = f"cross_api_s{sample_idx}"
+        generation_tasks.append(
+            generate_cross_api_questions_async(
+                all_specs,
+                count=CROSS_API_QUESTIONS_PER_SAMPLE,
+                id_prefix=id_prefix,
+                sample_seed=sample_counter,
+            )
+        )
+        sample_counter += 1
+
+    # Add out-of-scope tasks
     generation_tasks.append(generate_out_of_scope_questions_async())
 
     # Run all generation tasks in parallel with progress bar
@@ -537,6 +693,10 @@ async def generate_eval_dataset_async() -> GeneratedDataset:
                 "max_paths_per_sample": MAX_PATHS_PER_SAMPLE,
                 "max_schemas_per_sample": MAX_SCHEMAS_PER_SAMPLE,
                 "samples_per_api": SAMPLES_PER_API,
+                "cross_api_paths_per_api": CROSS_API_PATHS_PER_API,
+                "cross_api_schemas_per_api": CROSS_API_SCHEMAS_PER_API,
+                "cross_api_samples": CROSS_API_SAMPLES,
+                "cross_api_questions_per_sample": CROSS_API_QUESTIONS_PER_SAMPLE,
             },
             "total_questions": len(unique_questions),
             "questions_by_category": {

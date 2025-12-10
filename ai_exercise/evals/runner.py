@@ -139,7 +139,7 @@ async def evaluate_single_question_async(
         parent_id = chunk_obj.metadata.get("parent_chunk_id")
 
         # Check if this chunk ID matches any ground truth ID
-        # Use prefix matching to handle split chunks (e.g., "hris_paths_x_part0" matches "hris_paths_x")
+        # Use prefix matching to handle split chunks (e.g., "id_part0" matches "id")
         is_match = False
         for gt_id in gt_chunk_ids:
             if chunk_id == gt_id or chunk_id.startswith(gt_id + "_part"):
