@@ -4,6 +4,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
+from openai import AsyncOpenAI
+
 from ai_exercise.configs.base import CONFIGS, get_config
 from ai_exercise.constants import SETTINGS, chroma_client, openai_client
 from ai_exercise.llm.completions import create_prompt, get_completion
@@ -23,6 +25,7 @@ from ai_exercise.models import (
 from ai_exercise.retrieval.bm25_index import BM25Index
 from ai_exercise.retrieval.hybrid_search import get_relevant_chunks_hybrid
 from ai_exercise.retrieval.intent_detection import detect_query_intent
+from ai_exercise.retrieval.reranker import rerank_chunks
 from ai_exercise.retrieval.retrieval import get_relevant_chunks_with_ids
 from ai_exercise.retrieval.vector_store import create_collection
 
@@ -57,6 +60,9 @@ def load_bm25_index_if_exists(collection_name: str) -> BM25Index | None:
 
 # Try to load existing BM25 index for current collection
 current_bm25_index = load_bm25_index_if_exists(current_collection_name)
+
+# Create async OpenAI client for intent detection and reranking
+async_openai_client = AsyncOpenAI(api_key=SETTINGS.openai_api_key.get_secret_value())
 
 
 @app.get("/health")
@@ -203,24 +209,27 @@ async def load_docs_route(
 
 
 @app.post("/chat")
-def chat_route(chat_query: ChatQuery) -> ChatOutput:
+async def chat_route(chat_query: ChatQuery) -> ChatOutput:
     """Chat route to chat with the API."""
     # Detect query intent for metadata filtering if enabled
     api_filter: list[str] | None = None
     if config.use_metadata_filtering:
-        api_filter = detect_query_intent(
-            client=openai_client,
+        api_filter = await detect_query_intent(
+            client=async_openai_client,
             query=chat_query.query,
         )
         print(f"Detected intent - filtering to APIs: {api_filter}")
 
     # Get relevant chunks - use hybrid search if enabled and BM25 index is available
+    # When reranking is enabled, retrieve more candidates for the reranker to work with
+    retrieval_k = SETTINGS.k_neighbors * 3 if config.use_reranking else SETTINGS.k_neighbors
+
     if config.use_hybrid_search and current_bm25_index is not None:
         relevant_chunks = get_relevant_chunks_hybrid(
             collection=collection,
             bm25_index=current_bm25_index,
             query=chat_query.query,
-            k=SETTINGS.k_neighbors,
+            k=retrieval_k,
             api_filter=api_filter,
         )
         print(
@@ -231,7 +240,7 @@ def chat_route(chat_query: ChatQuery) -> ChatOutput:
         relevant_chunks = get_relevant_chunks_with_ids(
             collection=collection,
             query=chat_query.query,
-            k=SETTINGS.k_neighbors,
+            k=retrieval_k,
             api_filter=api_filter,
         )
         if config.use_hybrid_search and current_bm25_index is None:
@@ -239,6 +248,16 @@ def chat_route(chat_query: ChatQuery) -> ChatOutput:
                 "Warning: Hybrid search enabled but BM25 index not loaded. "
                 "Using vector only."
             )
+
+    # Apply LLM-based reranking if enabled
+    if config.use_reranking:
+        relevant_chunks = await rerank_chunks(
+            client=async_openai_client,
+            query=chat_query.query,
+            chunks=relevant_chunks,
+            top_k=SETTINGS.k_neighbors,
+        )
+        print(f"Reranked {retrieval_k} chunks down to {len(relevant_chunks)}")
 
     # Extract content for prompt and source info for response
     context = [chunk.content for chunk in relevant_chunks]

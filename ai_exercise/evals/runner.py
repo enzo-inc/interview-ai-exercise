@@ -31,6 +31,8 @@ from ai_exercise.llm.completions import create_prompt
 from ai_exercise.llm.embeddings import openai_ef
 from ai_exercise.retrieval.bm25_index import BM25Index
 from ai_exercise.retrieval.hybrid_search import get_relevant_chunks_hybrid
+from ai_exercise.retrieval.intent_detection import detect_query_intent
+from ai_exercise.retrieval.reranker import rerank_chunks
 from ai_exercise.retrieval.retrieval import RetrievedChunk, get_relevant_chunks_with_ids
 from ai_exercise.retrieval.vector_store import create_collection
 
@@ -67,7 +69,7 @@ async def evaluate_single_question_async(
     Args:
         question: The evaluation question to test.
         collection: ChromaDB collection with loaded documents.
-        async_client: Async OpenAI client for parallel completions.
+        async_client: Async OpenAI client for completions, intent detection, and reranking.
         run_judges: Whether to run LLM judges (slower but more detailed).
         config: System configuration to use for retrieval settings.
         bm25_index: BM25 index for hybrid search (required if config.use_hybrid_search).
@@ -83,6 +85,19 @@ async def evaluate_single_question_async(
         and config.use_hybrid_search
         and bm25_index is not None
     )
+    use_metadata_filtering = config is not None and config.use_metadata_filtering
+    use_reranking = config is not None and config.use_reranking
+
+    # Detect query intent for metadata filtering if enabled (async)
+    api_filter: list[str] | None = None
+    if use_metadata_filtering:
+        api_filter = await detect_query_intent(
+            client=async_client,
+            query=question.question,
+        )
+
+    # When reranking is enabled, retrieve more candidates
+    retrieval_k = SETTINGS.k_neighbors * 3 if use_reranking else SETTINGS.k_neighbors
 
     # Retrieve relevant chunks with IDs (run in thread to not block)
     if use_hybrid:
@@ -91,14 +106,25 @@ async def evaluate_single_question_async(
             collection=collection,
             bm25_index=bm25_index,
             query=question.question,
-            k=SETTINGS.k_neighbors,
+            k=retrieval_k,
+            api_filter=api_filter,
         )
     else:
         retrieved_chunk_objs = await asyncio.to_thread(
             get_relevant_chunks_with_ids,
             collection=collection,
             query=question.question,
-            k=SETTINGS.k_neighbors,
+            k=retrieval_k,
+            api_filter=api_filter,
+        )
+
+    # Apply LLM-based reranking if enabled (async)
+    if use_reranking:
+        retrieved_chunk_objs = await rerank_chunks(
+            client=async_client,
+            query=question.question,
+            chunks=retrieved_chunk_objs,
+            top_k=SETTINGS.k_neighbors,
         )
 
     # Extract content and IDs
@@ -217,7 +243,13 @@ async def run_evaluation_async(
     else:
         click.echo("Using VECTOR-only search")
 
-    # Create async OpenAI client for parallel requests
+    # Show additional config features
+    if config.use_metadata_filtering:
+        click.echo("Using METADATA FILTERING (query intent detection)")
+    if config.use_reranking:
+        click.echo("Using LLM RE-RANKING")
+
+    # Create async OpenAI client
     async_client = AsyncOpenAI(api_key=SETTINGS.openai_api_key.get_secret_value())
 
     # Run evaluations in parallel

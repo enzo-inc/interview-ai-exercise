@@ -5,7 +5,7 @@ Detects which API(s) a query is asking about to enable targeted retrieval.
 
 from typing import Literal
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
 from ai_exercise.constants import OPENAPI_SPECS
@@ -35,8 +35,8 @@ class QueryIntent(BaseModel):
     )
 
 
-def detect_query_intent(
-    client: OpenAI,
+async def detect_query_intent(
+    client: AsyncOpenAI,
     query: str,
     model: str = "gpt-5-mini-2025-08-07",
 ) -> list[str]:
@@ -47,7 +47,7 @@ def detect_query_intent(
     for metadata filtering.
 
     Args:
-        client: OpenAI client instance.
+        client: AsyncOpenAI client instance.
         query: The user's query.
         model: Model to use for intent detection (default: gpt-5-mini-2025-08-07 for speed/cost).
 
@@ -78,7 +78,7 @@ Examples:
 - "How do I authenticate?" -> apis: ["stackone"]
 - "What APIs are available?" -> apis: ["all"]"""
 
-    response = client.beta.chat.completions.parse(
+    response = await client.beta.chat.completions.parse(
         model=model,
         messages=[
             {"role": "system", "content": system_prompt},
