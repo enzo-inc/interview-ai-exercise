@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from ai_exercise.configs.base import get_config
+from ai_exercise.configs.base import CONFIGS, get_config
 from ai_exercise.constants import SETTINGS, chroma_client, openai_client
 from ai_exercise.llm.completions import create_prompt, get_completion
 from ai_exercise.llm.embeddings import openai_ef
@@ -34,6 +34,41 @@ collection = create_collection(chroma_client, openai_ef, current_collection_name
 def health_check_route() -> HealthRouteOutput:
     """Health check route to check that the API is up."""
     return HealthRouteOutput(status="ok")
+
+
+@app.get("/configs")
+def list_configs() -> dict:
+    """List all available configurations."""
+    # Import configs module to ensure all configs are registered
+    import ai_exercise.configs  # noqa: F401
+
+    return {
+        "configs": list(CONFIGS.keys()),
+        "current": config.name,
+    }
+
+
+@app.post("/configs/{name}/select")
+def select_config(name: str) -> dict:
+    """Switch to a different configuration and its matching collection.
+
+    Automatically selects the collection named '{config_name}_vector_index'.
+    """
+    global config, collection, current_collection_name
+
+    # Switch config
+    config = get_config(name)
+
+    # Auto-select matching collection
+    matching_collection = f"{name}_vector_index"
+    collection = create_collection(chroma_client, openai_ef, matching_collection)
+    current_collection_name = matching_collection
+
+    return {
+        "status": "ok",
+        "config": name,
+        "collection": matching_collection,
+    }
 
 
 @app.get("/config")
@@ -71,19 +106,31 @@ def select_collection(name: str) -> dict:
 
 
 @app.get("/load")
-async def load_docs_route(collection_name: str | None = None) -> LoadDocumentsOutput:
+async def load_docs_route(
+    collection_name: str | None = None,
+    use_smart_chunking: bool | None = None,
+) -> LoadDocumentsOutput:
     """Route to load all 7 OpenAPI specs into vector store.
 
     Args:
         collection_name: Optional collection name to load into. If not specified,
                         loads into the current collection.
+        use_smart_chunking: Override config's smart chunking setting. If not specified,
+                           uses the current config's use_smart_chunking value.
     """
     # Determine target collection
     target_name = collection_name or current_collection_name
     target_collection = create_collection(chroma_client, openai_ef, target_name)
 
+    # Determine chunking strategy
+    smart_chunking = (
+        use_smart_chunking if use_smart_chunking is not None else config.use_smart_chunking
+    )
+
+    print(f"Loading specs with smart_chunking={smart_chunking}")
+
     # Load all specs with api_name metadata
-    documents = load_all_specs()
+    documents = load_all_specs(use_smart_chunking=smart_chunking)
 
     # split docs that are too long
     documents = split_docs(documents)

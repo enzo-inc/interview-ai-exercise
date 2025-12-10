@@ -56,63 +56,89 @@ if "messages" not in st.session_state:
 
 with st.sidebar:
     display_message_if_ping_fails()
-    
-    # Display current configuration
+
+    # Configuration selector
     st.divider()
     st.subheader("⚙️ Configuration")
     try:
+        # Fetch available configs and current config
+        configs_response = requests.get("http://localhost/configs", timeout=2)
         config_response = requests.get("http://localhost/config", timeout=2)
-        if config_response.status_code == 200:
+
+        if configs_response.status_code == 200 and config_response.status_code == 200:
+            configs_data = configs_response.json()
             config_data = config_response.json()
-            st.info(f"**Config:** `{config_data['name']}`")
-            st.caption(config_data["description"])
-            
-            # Show enabled features
-            features = []
-            if config_data.get("use_smart_chunking"):
-                features.append("Smart Chunking")
-            if config_data.get("use_hybrid_search"):
-                features.append("Hybrid Search")
-            if config_data.get("use_metadata_filtering"):
-                features.append("Metadata Filtering")
-            if config_data.get("use_reranking"):
-                features.append("Reranking")
-            if config_data.get("use_unknown_detection"):
-                features.append("Unknown Detection")
-            
-            if features:
-                st.write("**Enabled:** " + ", ".join(features))
+
+            available_configs = configs_data.get("configs", [])
+            current_config = configs_data.get("current", "")
+
+            if available_configs:
+                # Config selector
+                selected_config = st.selectbox(
+                    "Select Configuration",
+                    options=available_configs,
+                    index=available_configs.index(current_config) if current_config in available_configs else 0,
+                    format_func=lambda x: f"{x.upper()} - {'Smart Chunking' if x == 'c1' else 'Baseline' if x == 'c0' else x}",
+                )
+
+                # Switch config if changed (this also auto-selects the matching collection)
+                if selected_config != current_config:
+                    requests.post(
+                        f"http://localhost/configs/{selected_config}/select", timeout=2
+                    )
+                    st.rerun()
+
+                # Show current config details
+                st.caption(config_data["description"])
+
+                # Show enabled features
+                features = []
+                if config_data.get("use_smart_chunking"):
+                    features.append("Smart Chunking")
+                if config_data.get("use_hybrid_search"):
+                    features.append("Hybrid Search")
+                if config_data.get("use_metadata_filtering"):
+                    features.append("Metadata Filtering")
+                if config_data.get("use_reranking"):
+                    features.append("Reranking")
+                if config_data.get("use_unknown_detection"):
+                    features.append("Unknown Detection")
+
+                if features:
+                    st.write("**Enabled:** " + ", ".join(features))
             else:
-                st.write("**Mode:** Baseline")
+                st.warning("No configurations available")
         else:
             st.warning("Could not fetch config from API")
     except Exception as e:
         st.warning(f"API not available: {e}")
-    
-    # Collection selector
+
+    # Show current collection (read-only, auto-selected by config)
     st.divider()
     st.subheader("📚 Vector Store")
     try:
         coll_response = requests.get("http://localhost/collections", timeout=2)
         if coll_response.status_code == 200:
             coll_data = coll_response.json()
-            collections = coll_data.get("collections", [])
-            current = coll_data.get("current", "")
+            current_collection = coll_data.get("current", "")
 
-            if collections:
-                selected = st.selectbox(
-                    "Collection",
-                    options=collections,
-                    index=collections.index(current) if current in collections else 0,
-                )
-                # Switch collection if changed
-                if selected != current:
-                    requests.post(
-                        f"http://localhost/collections/{selected}/select", timeout=2
-                    )
-                    st.rerun()
+            if current_collection:
+                st.info(f"**Collection:** `{current_collection}`")
+
+                # Show collection count
+                try:
+                    # Get collection count via the API
+                    count_response = requests.get(f"http://localhost/collections", timeout=2)
+                    if count_response.status_code == 200:
+                        collections = count_response.json().get("collections", [])
+                        if current_collection in collections:
+                            st.caption(f"Collection exists and is active")
+                        else:
+                            st.warning("Collection not found. Load documents first.")
+                except Exception:
+                    pass
             else:
-                st.info("No collections found. Load documents first.")
+                st.info("No collection selected")
         else:
             st.warning("Could not fetch collections from API")
     except Exception as e:

@@ -9,6 +9,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from ai_exercise.constants import OPENAPI_SPECS, SETTINGS
 from ai_exercise.loading.chunk_json import chunk_data_with_ids
+from ai_exercise.loading.smart_chunker import build_smart_chunks
 from ai_exercise.models import Document
 
 
@@ -72,11 +73,15 @@ def build_docs(data: dict[str, Any], api_name: str) -> list[Document]:
     return docs
 
 
-def load_all_specs() -> list[Document]:
+def load_all_specs(use_smart_chunking: bool = False) -> list[Document]:
     """Load all OpenAPI specs with api_name metadata.
 
     Iterates through all specs defined in OPENAPI_SPECS,
     fetches them, chunks them, and returns combined documents.
+
+    Args:
+        use_smart_chunking: If True, use endpoint-centric chunking with $ref
+            resolution. If False, use naive JSON key-based chunking.
 
     Returns:
         List of Document objects from all API specs.
@@ -84,7 +89,10 @@ def load_all_specs() -> list[Document]:
     all_docs: list[Document] = []
     for api_name, url in OPENAPI_SPECS.items():
         json_data = get_json_data(url)
-        docs = build_docs(json_data, api_name=api_name)
+        if use_smart_chunking:
+            docs = build_smart_chunks(json_data, api_name=api_name)
+        else:
+            docs = build_docs(json_data, api_name=api_name)
         all_docs.extend(docs)
     return all_docs
 
