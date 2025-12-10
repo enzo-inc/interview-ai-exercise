@@ -23,7 +23,7 @@ class Settings(BaseSettings):
         env_file = ".env"
 
     openai_api_key: SecretStr
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-5.1-2025-11-13"
     embeddings_model: str = "text-embedding-3-small"
 
     collection_name: str = "documents"
