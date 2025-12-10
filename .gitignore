@@ -25,3 +25,4 @@ __pycache__/
 
 # chroma db
 .chroma_db/
+.bm25_index/

@@ -30,9 +30,11 @@ def get_json_data(url: str) -> dict[str, Any]:
 
 
 def document_json_array_with_ids(
-    chunks_with_ids: list[tuple[str, str, dict[str, Any]]], source: str, api_name: str
+    chunks_with_ids: list[tuple[str, str, dict[str, Any]]],
+    source: str,
+    api_name: str,
 ) -> list[Document]:
-    """Converts an array of (chunk_id, original_key, chunk_data) tuples into Document objects.
+    """Convert (chunk_id, original_key, chunk_data) tuples to Documents.
 
     Args:
         chunks_with_ids: List of (chunk_id, original_key, chunk_data) tuples.

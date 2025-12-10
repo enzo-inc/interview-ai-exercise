@@ -16,7 +16,7 @@ from typing import Any
 import click
 from tqdm.asyncio import tqdm_asyncio
 
-from ai_exercise.configs.base import get_config
+from ai_exercise.configs.base import SystemConfig, get_config
 from ai_exercise.constants import SETTINGS, chroma_client
 from ai_exercise.evals.datasets import EvalQuestion, load_eval_dataset
 from ai_exercise.evals.judges import judge_answer_async
@@ -32,8 +32,29 @@ from ai_exercise.evals.metrics import (
 from ai_exercise.llm.completions import create_prompt
 from ai_exercise.llm.embeddings import openai_ef
 from ai_exercise.loading.chunk_json import generate_chunk_id, normalize_chunk_id
-from ai_exercise.retrieval.retrieval import get_relevant_chunks_with_ids
+from ai_exercise.retrieval.bm25_index import BM25Index
+from ai_exercise.retrieval.hybrid_search import get_relevant_chunks_hybrid
+from ai_exercise.retrieval.retrieval import RetrievedChunk, get_relevant_chunks_with_ids
 from ai_exercise.retrieval.vector_store import create_collection
+
+# BM25 index storage path
+BM25_INDEX_DIR = Path(".bm25_index")
+
+
+def get_bm25_index_path(collection_name: str) -> Path:
+    """Get the path for a BM25 index file."""
+    return BM25_INDEX_DIR / f"{collection_name}.pkl"
+
+
+def load_bm25_index_if_exists(collection_name: str) -> BM25Index | None:
+    """Load BM25 index from disk if it exists."""
+    path = get_bm25_index_path(collection_name)
+    if path.exists():
+        try:
+            return BM25Index.load(path)
+        except Exception as e:
+            click.echo(f"Warning: Failed to load BM25 index: {e}")
+    return None
 
 
 def normalize_ground_truth_chunk(gt_chunk: str, relevant_apis: list[str]) -> list[str]:
@@ -89,6 +110,8 @@ async def evaluate_single_question_async(
     collection: Any,
     async_client: Any,
     run_judges: bool = True,
+    config: SystemConfig | None = None,
+    bm25_index: BM25Index | None = None,
 ) -> EvalResult:
     """Evaluate a single question against the RAG system.
 
@@ -97,19 +120,37 @@ async def evaluate_single_question_async(
         collection: ChromaDB collection with loaded documents.
         async_client: Async OpenAI client for parallel completions.
         run_judges: Whether to run LLM judges (slower but more detailed).
+        config: System configuration to use for retrieval settings.
+        bm25_index: BM25 index for hybrid search (required if config.use_hybrid_search).
 
     Returns:
         EvalResult with all metrics for this question.
     """
     import asyncio
 
-    # Retrieve relevant chunks with IDs (run in thread to not block)
-    retrieved_chunk_objs = await asyncio.to_thread(
-        get_relevant_chunks_with_ids,
-        collection=collection,
-        query=question.question,
-        k=SETTINGS.k_neighbors,
+    # Determine retrieval method based on config
+    use_hybrid = (
+        config is not None
+        and config.use_hybrid_search
+        and bm25_index is not None
     )
+
+    # Retrieve relevant chunks with IDs (run in thread to not block)
+    if use_hybrid:
+        retrieved_chunk_objs: list[RetrievedChunk] = await asyncio.to_thread(
+            get_relevant_chunks_hybrid,
+            collection=collection,
+            bm25_index=bm25_index,
+            query=question.question,
+            k=SETTINGS.k_neighbors,
+        )
+    else:
+        retrieved_chunk_objs = await asyncio.to_thread(
+            get_relevant_chunks_with_ids,
+            collection=collection,
+            query=question.question,
+            k=SETTINGS.k_neighbors,
+        )
 
     # Extract content and IDs
     retrieved_chunks = [chunk.content for chunk in retrieved_chunk_objs]
@@ -222,16 +263,31 @@ async def run_evaluation_async(
     questions = load_eval_dataset()
     click.echo(f"Loaded {len(questions)} evaluation questions")
 
-    # Get or create collection
-    collection = create_collection(chroma_client, openai_ef, SETTINGS.collection_name)
+    # Get or create collection - use config-specific collection
+    collection_name = f"{config_name}_vector_index"
+    collection = create_collection(chroma_client, openai_ef, collection_name)
 
     # Check if collection has documents
     doc_count = collection.count()
     if doc_count == 0:
         raise click.ClickException(
-            "No documents in collection. Run 'make load-data' first."
+            f"No documents in collection '{collection_name}'. "
+            f"Run 'make load-data CONFIG={config_name}' first."
         )
     click.echo(f"Collection has {doc_count} documents")
+
+    # Load BM25 index if hybrid search is enabled
+    bm25_index: BM25Index | None = None
+    if config.use_hybrid_search:
+        bm25_index = load_bm25_index_if_exists(collection_name)
+        if bm25_index is not None:
+            click.echo(f"BM25 index loaded with {len(bm25_index)} documents")
+            click.echo("Using HYBRID search (BM25 + Vector)")
+        else:
+            click.echo("Warning: Hybrid search enabled but BM25 index not found.")
+            click.echo("Falling back to vector-only search.")
+    else:
+        click.echo("Using VECTOR-only search")
 
     # Create async OpenAI client for parallel requests
     async_client = AsyncOpenAI(api_key=SETTINGS.openai_api_key.get_secret_value())
@@ -242,7 +298,10 @@ async def run_evaluation_async(
     # Create tasks for parallel execution
     tasks = [
         evaluate_single_question_async(
-            q, collection, async_client, run_judges=run_judges
+            q, collection, async_client,
+            run_judges=run_judges,
+            config=config,
+            bm25_index=bm25_index,
         )
         for q in questions
     ]

@@ -57,7 +57,10 @@ def format_schema_properties(
     if schema.get("type") == "array":
         items = schema.get("items", {})
         if items.get("type") == "object":
-            return f"Array of objects with properties:\n{format_schema_properties(items, indent, max_depth, current_depth + 1)}"
+            nested_props = format_schema_properties(
+                items, indent, max_depth, current_depth + 1
+            )
+            return f"Array of objects with properties:\n{nested_props}"
         item_type = items.get("type", "unknown")
         return f"Array of {item_type}"
 
@@ -80,17 +83,20 @@ def format_schema_properties(
                 prop_schema, indent + 1, max_depth, current_depth + 1
             )
             lines.append(
-                f"{'  ' * indent}- {prop_name} (object){required_marker}: {description}\n{nested}"
+                f"{'  ' * indent}- {prop_name} (object){required_marker}: "
+                f"{description}\n{nested}"
             )
         elif prop_type == "array":
             items = prop_schema.get("items", {})
             item_type = items.get("type", "unknown")
             lines.append(
-                f"{'  ' * indent}- {prop_name} (array of {item_type}){required_marker}: {description}"
+                f"{'  ' * indent}- {prop_name} (array of {item_type})"
+                f"{required_marker}: {description}"
             )
         else:
             lines.append(
-                f"{'  ' * indent}- {prop_name} ({prop_type}){required_marker}: {description}"
+                f"{'  ' * indent}- {prop_name} ({prop_type})"
+                f"{required_marker}: {description}"
             )
 
     if len(properties) > 15:
@@ -99,7 +105,9 @@ def format_schema_properties(
     return "\n".join(lines)
 
 
-def format_request_body(request_body: dict[str, Any] | None, spec: dict[str, Any]) -> str:
+def format_request_body(
+    request_body: dict[str, Any] | None, spec: dict[str, Any]
+) -> str:
     """Format request body as readable text.
 
     Args:
@@ -132,7 +140,9 @@ def format_request_body(request_body: dict[str, Any] | None, spec: dict[str, Any
 
 
 def format_response(
-    responses: dict[str, Any], spec: dict[str, Any], status_codes: list[str] = None
+    responses: dict[str, Any],
+    spec: dict[str, Any],
+    status_codes: list[str] | None = None,
 ) -> str:
     """Format response schemas as readable text.
 
@@ -184,7 +194,7 @@ def get_auth_info(spec: dict[str, Any]) -> str:
         return "Not specified"
 
     auth_methods = []
-    for name, scheme in security_schemes.items():
+    for _name, scheme in security_schemes.items():
         scheme_type = scheme.get("type", "unknown")
         if scheme_type == "apiKey":
             location = scheme.get("in", "header")

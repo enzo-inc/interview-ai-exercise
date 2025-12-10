@@ -36,7 +36,7 @@ class SourceInfo(BaseModel):
 
     api_name: str  # e.g., "stackone", "hris", "ats"
     source_type: str  # e.g., "paths", "components", "webhooks"
-    resource_name: str  # Original path/schema name, e.g., "/connect_sessions/authenticate"
+    resource_name: str  # Original path/schema name
 
 
 class ChatOutput(BaseModel):

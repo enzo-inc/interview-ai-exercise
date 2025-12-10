@@ -73,12 +73,17 @@ with st.sidebar:
             current_config = configs_data.get("current", "")
 
             if available_configs:
-                # Config selector
+                # Config selector with descriptive labels
+                config_labels = {
+                    "c0": "Baseline",
+                    "c1": "Smart Chunking",
+                    "c2": "Hybrid Search",
+                }
                 selected_config = st.selectbox(
                     "Select Configuration",
                     options=available_configs,
                     index=available_configs.index(current_config) if current_config in available_configs else 0,
-                    format_func=lambda x: f"{x.upper()} - {'Smart Chunking' if x == 'c1' else 'Baseline' if x == 'c0' else x}",
+                    format_func=lambda x: f"{x.upper()} - {config_labels.get(x, x)}",
                 )
 
                 # Switch config if changed (this also auto-selects the matching collection)
@@ -113,9 +118,21 @@ with st.sidebar:
     except Exception as e:
         st.warning(f"API not available: {e}")
 
-    # Show current collection (read-only, auto-selected by config)
+    # Show search indices status
     st.divider()
-    st.subheader("📚 Vector Store")
+
+    # Check if hybrid search is enabled (config_data is set above)
+    use_hybrid = False
+    try:
+        use_hybrid = config_data.get("use_hybrid_search", False)
+    except NameError:
+        pass
+
+    if use_hybrid:
+        st.subheader("📚 Search Indices")
+    else:
+        st.subheader("📚 Vector Store")
+
     try:
         coll_response = requests.get("http://localhost/collections", timeout=2)
         if coll_response.status_code == 200:
@@ -123,20 +140,41 @@ with st.sidebar:
             current_collection = coll_data.get("current", "")
 
             if current_collection:
-                st.info(f"**Collection:** `{current_collection}`")
+                # Vector Store status
+                collections = coll_data.get("collections", [])
+                vector_exists = current_collection in collections
 
-                # Show collection count
-                try:
-                    # Get collection count via the API
-                    count_response = requests.get(f"http://localhost/collections", timeout=2)
-                    if count_response.status_code == 200:
-                        collections = count_response.json().get("collections", [])
-                        if current_collection in collections:
-                            st.caption(f"Collection exists and is active")
+                if use_hybrid:
+                    # Show both indices
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if vector_exists:
+                            st.success(f"Vector Store: `{current_collection}`")
                         else:
-                            st.warning("Collection not found. Load documents first.")
-                except Exception:
-                    pass
+                            st.warning(f"Vector Store: `{current_collection}` (not loaded)")
+
+                    # Check BM25 index status
+                    with col2:
+                        try:
+                            bm25_response = requests.get("http://localhost/bm25/status", timeout=2)
+                            if bm25_response.status_code == 200:
+                                bm25_data = bm25_response.json()
+                                if bm25_data.get("has_index"):
+                                    doc_count = bm25_data.get("document_count", 0)
+                                    st.success(f"BM25 Index: {doc_count} docs")
+                                else:
+                                    st.warning("BM25 Index: not loaded")
+                            else:
+                                st.warning("BM25 Index: status unavailable")
+                        except Exception:
+                            st.warning("BM25 Index: status unavailable")
+                else:
+                    # Vector-only mode
+                    if vector_exists:
+                        st.info(f"**Collection:** `{current_collection}`")
+                        st.caption("Collection exists and is active")
+                    else:
+                        st.warning(f"Collection `{current_collection}` not found. Load documents first.")
             else:
                 st.info("No collection selected")
         else:
