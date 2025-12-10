@@ -17,6 +17,7 @@ class AnswerMetrics:
     """Container for answer quality metrics."""
 
     accuracy_score: float
+    abstention_accuracy: float | None = None
 
 
 @dataclass
@@ -35,6 +36,7 @@ class EvalResult:
     retrieval_hit: bool
     first_relevant_rank: int | None  # Rank of first relevant chunk, None if no hit
     accuracy_score: int
+    abstention_score: int | None = None  # Only set for out_of_scope questions
 
 
 def chunk_id_matches(retrieved_id: str, gt_id: str) -> bool:
@@ -171,8 +173,23 @@ def compute_answer_metrics(eval_results: list[EvalResult]) -> AnswerMetrics:
         AnswerMetrics with aggregated scores.
     """
     if not eval_results:
-        return AnswerMetrics(accuracy_score=0.0)
+        return AnswerMetrics(accuracy_score=0.0, abstention_accuracy=None)
 
     avg_accuracy = sum(r.accuracy_score for r in eval_results) / len(eval_results)
 
-    return AnswerMetrics(accuracy_score=avg_accuracy)
+    # Compute abstention accuracy for out_of_scope questions
+    out_of_scope_results = [
+        r for r in eval_results
+        if r.category == "out_of_scope" and r.abstention_score is not None
+    ]
+    abstention_accuracy = None
+    if out_of_scope_results:
+        abstention_accuracy = (
+            sum(r.abstention_score for r in out_of_scope_results)
+            / len(out_of_scope_results)
+        )
+
+    return AnswerMetrics(
+        accuracy_score=avg_accuracy,
+        abstention_accuracy=abstention_accuracy,
+    )

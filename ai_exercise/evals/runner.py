@@ -19,7 +19,7 @@ from tqdm.asyncio import tqdm_asyncio
 from ai_exercise.configs.base import SystemConfig, get_config
 from ai_exercise.constants import SETTINGS, chroma_client
 from ai_exercise.evals.datasets import EvalQuestion, load_eval_dataset
-from ai_exercise.evals.judges import judge_answer_async
+from ai_exercise.evals.judges import judge_abstention_async, judge_answer_async
 from ai_exercise.evals.metrics import (
     AnswerMetrics,
     EvalResult,
@@ -169,6 +169,7 @@ async def evaluate_single_question_async(
 
     # Run LLM judge if requested
     accuracy_score = 3  # Default middle score
+    abstention_score = None  # Only set for out_of_scope questions
 
     if run_judges:
         try:
@@ -180,6 +181,18 @@ async def evaluate_single_question_async(
             accuracy_score = accuracy.score
         except Exception as e:
             click.echo(f"Warning: Judge failed for {question.id}: {e}")
+
+        # Run abstention judge for out_of_scope questions
+        if question.category == "out_of_scope":
+            try:
+                abstention = await judge_abstention_async(
+                    question=question.question,
+                    answer=generated_answer,
+                    retrieved_context=retrieved_chunks,
+                )
+                abstention_score = abstention.score
+            except Exception as e:
+                click.echo(f"Warning: Abstention judge failed for {question.id}: {e}")
 
     return EvalResult(
         question_id=question.id,
@@ -194,6 +207,7 @@ async def evaluate_single_question_async(
         retrieval_hit=retrieval_hit,
         first_relevant_rank=first_relevant_rank,
         accuracy_score=accuracy_score,
+        abstention_score=abstention_score,
     )
 
 
@@ -308,6 +322,12 @@ def save_results(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    answer_quality_summary = {
+        "accuracy_score": answer_metrics.accuracy_score,
+    }
+    if answer_metrics.abstention_accuracy is not None:
+        answer_quality_summary["abstention_accuracy"] = answer_metrics.abstention_accuracy
+
     output = {
         "config": config_name,
         "timestamp": datetime.now().isoformat(),
@@ -318,9 +338,7 @@ def save_results(
                 "mrr": retrieval_metrics.mrr,
                 "k": retrieval_metrics.k,
             },
-            "answer_quality": {
-                "accuracy_score": answer_metrics.accuracy_score,
-            },
+            "answer_quality": answer_quality_summary,
         },
         "results_by_category": {},
         "detailed_results": [],
@@ -340,21 +358,22 @@ def save_results(
 
     # Add detailed results
     for r in results:
-        output["detailed_results"].append(
-            {
-                "question_id": r.question_id,
-                "question": r.question,
-                "category": r.category,
-                "relevant_apis": r.relevant_apis,
-                "generated_answer": r.generated_answer,
-                "ground_truth_answer": r.ground_truth_answer,
-                "relevant_structural_ids": r.relevant_structural_ids,
-                "retrieved_chunk_ids": r.retrieved_chunk_ids,
-                "retrieval_hit": r.retrieval_hit,
-                "first_relevant_rank": r.first_relevant_rank,
-                "accuracy_score": r.accuracy_score,
-            }
-        )
+        result_entry = {
+            "question_id": r.question_id,
+            "question": r.question,
+            "category": r.category,
+            "relevant_apis": r.relevant_apis,
+            "generated_answer": r.generated_answer,
+            "ground_truth_answer": r.ground_truth_answer,
+            "relevant_structural_ids": r.relevant_structural_ids,
+            "retrieved_chunk_ids": r.retrieved_chunk_ids,
+            "retrieval_hit": r.retrieval_hit,
+            "first_relevant_rank": r.first_relevant_rank,
+            "accuracy_score": r.accuracy_score,
+        }
+        if r.abstention_score is not None:
+            result_entry["abstention_score"] = r.abstention_score
+        output["detailed_results"].append(result_entry)
 
     output_path = output_dir / f"{config_name}_results.json"
     with open(output_path, "w") as f:
@@ -410,6 +429,8 @@ def run(config: str, eval_type: str, no_judges: bool, output: str) -> None:
 
     click.echo("\n--- Answer Quality Metrics ---")
     click.echo(f"Accuracy Score (1-5): {answer_metrics.accuracy_score:.2f}")
+    if answer_metrics.abstention_accuracy is not None:
+        click.echo(f"Abstention Accuracy (0-1): {answer_metrics.abstention_accuracy:.2f}")
 
     # Save results
     output_path = save_results(
@@ -458,6 +479,7 @@ def compare(configs: str, output: str) -> None:
         ("Hit Rate@K", _get("retrieval", "hit_rate_at_k")),
         ("MRR", _get("retrieval", "mrr")),
         ("Accuracy (1-5)", _get("answer_quality", "accuracy_score")),
+        ("Abstention Accuracy", _get("answer_quality", "abstention_accuracy")),
     ]
 
     for metric_name, getter in metrics:

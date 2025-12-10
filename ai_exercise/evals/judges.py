@@ -26,6 +26,17 @@ class AccuracyJudgment(BaseModel):
     reasoning: str = Field(description="Brief explanation for the score")
 
 
+class AbstentionJudgment(BaseModel):
+    """Structured output for abstention judgment."""
+
+    score: int = Field(
+        ge=0,
+        le=1,
+        description="1 if the model correctly refused to answer, 0 if it answered anyway",
+    )
+    reasoning: str = Field(description="Brief explanation for the score")
+
+
 async def judge_accuracy_async(
     question: str,
     answer: str,
@@ -117,3 +128,62 @@ async def judge_answers_batch_async(
     )
 
     return results
+
+
+async def judge_abstention_async(
+    question: str,
+    answer: str,
+    retrieved_context: list[str],
+) -> AbstentionJudgment:
+    """Judge whether the model correctly refused to answer when context is irrelevant.
+
+    This metric is used for out-of-scope questions where the retrieved context
+    does not contain relevant information to answer the question. The model
+    should refuse to answer rather than hallucinating or guessing.
+
+    Args:
+        question: The original question asked.
+        answer: The generated answer to evaluate.
+        retrieved_context: List of retrieved context chunks.
+
+    Returns:
+        AbstentionJudgment with score (0 or 1) and reasoning.
+    """
+    context_str = "\n\n---\n\n".join(retrieved_context) if retrieved_context else "[No context retrieved]"
+
+    prompt = f"""You are evaluating whether a RAG system correctly refused to answer a question when the retrieved context does not contain relevant information.
+
+QUESTION: {question}
+
+RETRIEVED CONTEXT:
+{context_str}
+
+GENERATED ANSWER:
+{answer}
+
+Your task:
+1. First, examine the retrieved context - it should NOT contain information relevant to answering the question (this is an out-of-scope question).
+2. Then, evaluate whether the model's answer appropriately refuses/abstains from answering.
+
+A CORRECT refusal (score=1) means the model:
+- Explicitly states it cannot answer the question
+- Indicates the information is not available in the context
+- Does NOT provide a substantive answer or guess
+
+An INCORRECT response (score=0) means the model:
+- Provides a substantive answer to the question
+- Makes up or hallucinates information
+- Attempts to answer despite lacking relevant context
+
+Rate the abstention behavior with a score of 0 or 1."""
+
+    response = await async_openai_client.beta.chat.completions.parse(
+        model=SETTINGS.openai_model,
+        messages=[{"role": "user", "content": prompt}],
+        response_format=AbstentionJudgment,
+    )
+
+    result = response.choices[0].message.parsed
+    if result is None:
+        return AbstentionJudgment(score=0, reasoning="Failed to parse judgment")
+    return result
