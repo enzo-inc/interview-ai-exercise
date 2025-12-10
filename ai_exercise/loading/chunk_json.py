@@ -56,8 +56,8 @@ def chunk_data(data: dict[str, Any], key: str) -> list[dict[str, Any]]:
 
 def chunk_data_with_ids(
     data: dict[str, Any], key: str, api_name: str
-) -> list[tuple[str, dict[str, Any]]]:
-    """Chunk JSON data by key, returning (chunk_id, chunk_data) tuples.
+) -> list[tuple[str, str, dict[str, Any]]]:
+    """Chunk JSON data by key, returning (chunk_id, original_key, chunk_data) tuples.
 
     Args:
         data: The full JSON data (e.g., OpenAPI spec).
@@ -65,10 +65,10 @@ def chunk_data_with_ids(
         api_name: Name of the API for ID generation.
 
     Returns:
-        List of (chunk_id, chunk_data) tuples.
+        List of (chunk_id, original_key, chunk_data) tuples.
     """
     info = data.get(key, {})
     return [
-        (generate_chunk_id(api_name, key, sub_key), {sub_key: sub_info})
+        (generate_chunk_id(api_name, key, sub_key), sub_key, {sub_key: sub_info})
         for sub_key, sub_info in info.items()
     ]

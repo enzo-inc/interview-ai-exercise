@@ -31,7 +31,16 @@ class ChatQuery(BaseModel):
     query: str
 
 
+class SourceInfo(BaseModel):
+    """Information about a retrieved source document."""
+
+    api_name: str  # e.g., "stackone", "hris", "ats"
+    source_type: str  # e.g., "paths", "components", "webhooks"
+    resource_name: str  # Original path/schema name, e.g., "/connect_sessions/authenticate"
+
+
 class ChatOutput(BaseModel):
     """Model for the chat route output."""
 
     message: str
+    sources: list[SourceInfo] = []  # List of source documents used

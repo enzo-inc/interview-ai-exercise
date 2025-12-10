@@ -16,8 +16,9 @@ from ai_exercise.models import (
     ChatQuery,
     HealthRouteOutput,
     LoadDocumentsOutput,
+    SourceInfo,
 )
-from ai_exercise.retrieval.retrieval import get_relevant_chunks
+from ai_exercise.retrieval.retrieval import get_relevant_chunks_with_ids
 from ai_exercise.retrieval.vector_store import create_collection
 
 app = FastAPI()
@@ -67,13 +68,36 @@ async def load_docs_route() -> LoadDocumentsOutput:
 @app.post("/chat")
 def chat_route(chat_query: ChatQuery) -> ChatOutput:
     """Chat route to chat with the API."""
-    # Get relevant chunks from the collection
-    relevant_chunks = get_relevant_chunks(
+    # Get relevant chunks from the collection with their IDs
+    relevant_chunks = get_relevant_chunks_with_ids(
         collection=collection, query=chat_query.query, k=SETTINGS.k_neighbors
     )
 
+    # Extract content for prompt and source info for response
+    context = [chunk.content for chunk in relevant_chunks]
+
+    # Build source info from metadata, deduplicating by (api_name, source, resource_name)
+    seen_sources = set()
+    sources = []
+    for chunk in relevant_chunks:
+        meta = chunk.metadata
+        key = (
+            meta.get("api_name", "unknown"),
+            meta.get("source", "unknown"),
+            meta.get("resource_name", "unknown"),
+        )
+        if key not in seen_sources:
+            seen_sources.add(key)
+            sources.append(
+                SourceInfo(
+                    api_name=key[0],
+                    source_type=key[1],
+                    resource_name=key[2],
+                )
+            )
+
     # Create prompt with context
-    prompt = create_prompt(query=chat_query.query, context=relevant_chunks)
+    prompt = create_prompt(query=chat_query.query, context=context)
 
     print(f"Prompt: {prompt}")
 
@@ -84,7 +108,7 @@ def chat_route(chat_query: ChatQuery) -> ChatOutput:
         model=SETTINGS.openai_model,
     )
 
-    return ChatOutput(message=result)
+    return ChatOutput(message=result, sources=sources)
 
 
 if __name__ == "__main__":

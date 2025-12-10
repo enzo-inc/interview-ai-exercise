@@ -11,6 +11,36 @@ import streamlit as st
 
 from demo.ping import display_message_if_ping_fails
 
+# Map source types to display labels
+SOURCE_TYPE_LABELS = {
+    "paths": "Path",
+    "components": "Schema",
+    "webhooks": "Webhook",
+}
+
+
+def render_sources(sources: list[dict]) -> None:
+    """Render sources expander with formatted source info.
+
+    Args:
+        sources: List of source dicts with api_name, source_type, and resource_name.
+    """
+    if not sources:
+        return
+
+    with st.expander(f"📄 Sources ({len(sources)} documents)"):
+        for source in sources:
+            api_name = source.get("api_name", "unknown")
+            source_type = source.get("source_type", "unknown")
+            resource_name = source.get("resource_name", "unknown")
+
+            spec_url = f"https://api.eu1.stackone.com/oas/{api_name}.json"
+            type_label = SOURCE_TYPE_LABELS.get(source_type, source_type.title())
+
+            st.markdown(
+                f"[{api_name}.json]({spec_url}) - {type_label}: `{resource_name}`"
+            )
+
 st.set_page_config(
     "RAG Example",
 )
@@ -74,12 +104,15 @@ if "messages" not in st.session_state:
     ]
 
 for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+        # Display sources for assistant messages
+        if msg["role"] == "assistant" and msg.get("sources"):
+            render_sources(msg["sources"])
 
 if prompt := st.chat_input("Which path gives me the candidate list?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-    msg = ""
 
     with st.spinner("Thinking..."):
         try:
@@ -87,11 +120,19 @@ if prompt := st.chat_input("Which path gives me the candidate list?"):
             response.raise_for_status()
             result = response.json()
             msg = result["message"]
+            sources = result.get("sources", [])
         except Exception as e:
             st.error(e)
             st.stop()
 
     st.empty()
 
-    st.session_state.messages.append({"role": "assistant", "content": msg})
-    st.chat_message("assistant").write(msg)
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": msg,
+        "sources": sources,
+    })
+    with st.chat_message("assistant"):
+        st.write(msg)
+        if sources:
+            render_sources(sources)

@@ -29,17 +29,17 @@ def get_json_data(url: str) -> dict[str, Any]:
 
 
 def document_json_array_with_ids(
-    chunks_with_ids: list[tuple[str, dict[str, Any]]], source: str, api_name: str
+    chunks_with_ids: list[tuple[str, str, dict[str, Any]]], source: str, api_name: str
 ) -> list[Document]:
-    """Converts an array of (chunk_id, chunk_data) tuples into Document objects.
+    """Converts an array of (chunk_id, original_key, chunk_data) tuples into Document objects.
 
     Args:
-        chunks_with_ids: List of (chunk_id, chunk_data) tuples.
+        chunks_with_ids: List of (chunk_id, original_key, chunk_data) tuples.
         source: The source type (paths, webhooks, or components).
         api_name: The name of the API this chunk belongs to.
 
     Returns:
-        List of Document objects with metadata including chunk_id.
+        List of Document objects with metadata including chunk_id and resource_name.
     """
     return [
         Document(
@@ -48,9 +48,10 @@ def document_json_array_with_ids(
                 "source": source,
                 "api_name": api_name,
                 "chunk_id": chunk_id,
+                "resource_name": original_key,
             },
         )
-        for chunk_id, chunk_data in chunks_with_ids
+        for chunk_id, original_key, chunk_data in chunks_with_ids
     ]
 
 
