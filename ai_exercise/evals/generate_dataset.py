@@ -7,6 +7,7 @@ Random sampling ensures coverage across entire API specs without context overflo
 import asyncio
 import json
 import random
+import re
 from datetime import datetime
 from typing import Any
 
@@ -15,22 +16,153 @@ import openai
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 from tenacity import (
+    RetryCallState,
     retry,
     retry_if_exception_type,
     stop_after_attempt,
-    wait_exponential,
 )
 from tqdm.asyncio import tqdm_asyncio
 
 from ai_exercise.constants import OPENAPI_SPECS, SETTINGS
 from ai_exercise.evals.datasets import EvalQuestion, GeneratedDataset, save_eval_dataset
 
+# Concurrency control - limit parallel API calls to avoid overwhelming rate limits
+# With 500K TPM limit and ~20K tokens per request, we can do ~25 requests/min safely
+MAX_CONCURRENT_API_CALLS = 10
+_api_semaphore: asyncio.Semaphore | None = None
+
+
+def get_api_semaphore() -> asyncio.Semaphore:
+    """Get or create the API semaphore (must be called within an event loop)."""
+    global _api_semaphore
+    if _api_semaphore is None:
+        _api_semaphore = asyncio.Semaphore(MAX_CONCURRENT_API_CALLS)
+    return _api_semaphore
+
+
+def _parse_reset_time(reset_str: str) -> float | None:
+    """Parse reset time string from OpenAI headers (e.g., '1s', '6m0s', '2m30s')."""
+    if not reset_str:
+        return None
+
+    # Try "Xs" format (e.g., "1s", "2.5s")
+    match = re.match(r"^(\d+\.?\d*)s$", reset_str)
+    if match:
+        return float(match.group(1))
+
+    # Try "XmYs" format (e.g., "6m0s", "2m30s")
+    match = re.match(r"^(\d+)m(\d+\.?\d*)s$", reset_str)
+    if match:
+        return int(match.group(1)) * 60 + float(match.group(2))
+
+    # Try "Xm" format (e.g., "2m")
+    match = re.match(r"^(\d+)m$", reset_str)
+    if match:
+        return int(match.group(1)) * 60
+
+    return None
+
+
+def _get_retry_after_from_headers(exc: openai.RateLimitError) -> float | None:
+    """Extract retry-after time from OpenAI response headers.
+
+    OpenAI provides these headers:
+    - x-ratelimit-reset-requests: Time until request limit resets (e.g., "1s")
+    - x-ratelimit-reset-tokens: Time until token limit resets (e.g., "6m0s")
+    - retry-after: Standard HTTP retry header (seconds)
+    """
+    response = exc.response
+    if response is None:
+        return None
+
+    headers = response.headers
+
+    # First check standard retry-after header (in seconds)
+    retry_after = headers.get("retry-after")
+    if retry_after:
+        try:
+            return float(retry_after)
+        except ValueError:
+            pass
+
+    # Check OpenAI-specific headers - use the longer of the two reset times
+    reset_tokens = _parse_reset_time(headers.get("x-ratelimit-reset-tokens", ""))
+    reset_requests = _parse_reset_time(headers.get("x-ratelimit-reset-requests", ""))
+
+    # Return the longer wait time (usually tokens is the bottleneck)
+    times = [t for t in [reset_tokens, reset_requests] if t is not None]
+    if times:
+        return max(times)
+
+    return None
+
+
+def _wait_with_openai_retry_after(retry_state: RetryCallState) -> float:
+    """Custom wait function that uses OpenAI's suggested retry time from headers.
+
+    Falls back to exponential backoff if retry time cannot be extracted from headers.
+    """
+    # Try to get retry-after from the response headers
+    if retry_state.outcome and retry_state.outcome.exception():
+        exc = retry_state.outcome.exception()
+        if isinstance(exc, openai.RateLimitError):
+            retry_after = _get_retry_after_from_headers(exc)
+            if retry_after is not None:
+                # Add a small buffer to be safe
+                return retry_after + 0.5
+
+    # Fall back to exponential backoff: 2, 4, 8, 16, 32, 60 (capped)
+    attempt = retry_state.attempt_number
+    wait_time = min(2 ** attempt, 60)
+    return wait_time
+
+
+def _log_retry_attempt(retry_state: RetryCallState) -> None:
+    """Log retry attempts for visibility."""
+    attempt = retry_state.attempt_number
+    exc = retry_state.outcome.exception() if retry_state.outcome else None
+
+    # Determine wait time and its source
+    wait_time = _wait_with_openai_retry_after(retry_state)
+    wait_source = "exponential backoff"
+
+    # Extract useful info from the exception and headers
+    exc_info = ""
+    if exc and isinstance(exc, openai.RateLimitError):
+        # Check if we got the wait time from headers
+        header_wait = _get_retry_after_from_headers(exc)
+        if header_wait is not None:
+            wait_source = "from API headers"
+
+        # Extract rate limit type from error message
+        error_str = str(exc)
+        if "TPM" in error_str:
+            exc_info = " (token limit)"
+        elif "RPM" in error_str:
+            exc_info = " (request limit)"
+
+        # Log remaining limits if available
+        headers = exc.response.headers if exc.response else {}
+        remaining_tokens = headers.get("x-ratelimit-remaining-tokens")
+        remaining_requests = headers.get("x-ratelimit-remaining-requests")
+        if remaining_tokens or remaining_requests:
+            exc_info += (
+                f" [remaining: {remaining_requests or '?'} req, "
+                f"{remaining_tokens or '?'} tokens]"
+            )
+
+    print(
+        f"  [Rate limit] Retry {attempt}/10{exc_info} - "
+        f"waiting {wait_time:.1f}s ({wait_source})..."
+    )
+
 
 # Retry decorator for OpenAI API calls with rate limiting
 openai_retry = retry(
     retry=retry_if_exception_type(openai.RateLimitError),
-    wait=wait_exponential(multiplier=1, min=2, max=60),
-    stop=stop_after_attempt(6),
+    wait=_wait_with_openai_retry_after,
+    stop=stop_after_attempt(10),  # Increased from 6 for better resilience
+    before_sleep=_log_retry_attempt,
     reraise=True,
 )
 
@@ -58,14 +190,25 @@ class QuestionBatch(BaseModel):
 
 
 @openai_retry
-async def _call_openai_parse(prompt: str) -> QuestionBatch | None:
-    """Make an OpenAI API call with retry logic for rate limits."""
+async def _call_openai_parse_inner(prompt: str) -> QuestionBatch | None:
+    """Make an OpenAI API call (inner function with retry logic)."""
     response = await async_openai_client.beta.chat.completions.parse(
         model=SETTINGS.openai_model,
         messages=[{"role": "user", "content": prompt}],
         response_format=QuestionBatch,
     )
     return response.choices[0].message.parsed
+
+
+async def _call_openai_parse(prompt: str) -> QuestionBatch | None:
+    """Make an OpenAI API call with retry logic and concurrency control.
+
+    Uses a semaphore to limit concurrent API calls, preventing rate limit
+    exhaustion when many tasks run in parallel.
+    """
+    semaphore = get_api_semaphore()
+    async with semaphore:
+        return await _call_openai_parse_inner(prompt)
 
 
 # Question category specifications
@@ -667,7 +810,11 @@ async def generate_eval_dataset_async() -> GeneratedDataset:
     generation_tasks.append(generate_out_of_scope_questions_async())
 
     # Run all generation tasks in parallel with progress bar
-    print(f"\nGenerating questions ({len(generation_tasks)} tasks in parallel)...")
+    print(
+        f"\nGenerating questions ({len(generation_tasks)} tasks, "
+        f"max {MAX_CONCURRENT_API_CALLS} concurrent API calls)..."
+    )
+    print("Rate limit handling: auto-retry with OpenAI's suggested wait time\n")
     results = await tqdm_asyncio.gather(
         *generation_tasks,
         desc="Generating questions",
