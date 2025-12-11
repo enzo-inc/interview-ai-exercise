@@ -377,7 +377,9 @@ Properties:
                     "chunk_type": "schema",
                     "chunk_id": chunk_id,
                     "resource_name": schema_name,
-                    "covers": json_module.dumps(covers),  # Serialize list as JSON string
+                    "covers": json_module.dumps(
+                        covers
+                    ),  # Serialize list as JSON string
                 },
             )
         )

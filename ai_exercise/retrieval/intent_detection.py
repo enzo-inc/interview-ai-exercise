@@ -15,13 +15,34 @@ AVAILABLE_APIS = list(OPENAPI_SPECS.keys())
 
 # API descriptions for better intent detection
 API_DESCRIPTIONS = {
-    "stackone": "Core StackOne platform - connect sessions, accounts, connectors, proxy requests",
-    "hris": "Human Resources - employees, employments, time off, documents, departments, locations, benefits",
-    "ats": "Applicant Tracking System - candidates, applications, jobs, interviews, offers, scorecards",
-    "lms": "Learning Management System - courses, content, completions, assignments, categories",
-    "iam": "Identity & Access Management - users, roles, permissions, groups, policies",
-    "crm": "Customer Relationship Management - contacts, accounts, lists, campaigns",
-    "marketing": "Marketing automation - email templates, campaigns, push templates, content blocks",
+    "stackone": (
+        "Core StackOne platform - connect sessions, accounts, connectors, "
+        "proxy requests"
+    ),
+    "hris": (
+        "Human Resources - employees, employments, time off, documents, "
+        "departments, locations, benefits"
+    ),
+    "ats": (
+        "Applicant Tracking System - candidates, applications, jobs, "
+        "interviews, offers, scorecards"
+    ),
+    "lms": (
+        "Learning Management System - courses, content, completions, "
+        "assignments, categories"
+    ),
+    "iam": (
+        "Identity & Access Management - users, roles, permissions, groups, "
+        "policies"
+    ),
+    "crm": (
+        "Customer Relationship Management - contacts, accounts, lists, "
+        "campaigns"
+    ),
+    "marketing": (
+        "Marketing automation - email templates, campaigns, push templates, "
+        "content blocks"
+    ),
 }
 
 
@@ -31,7 +52,10 @@ class QueryIntent(BaseModel):
     apis: list[
         Literal["stackone", "hris", "ats", "lms", "iam", "crm", "marketing", "all"]
     ] = Field(
-        description="List of API names relevant to the query. Use 'all' if the query is general or spans all APIs."
+        description=(
+            "List of API names relevant to the query. Use 'all' if the query "
+            "is general or spans all APIs."
+        )
     )
 
 
@@ -49,7 +73,8 @@ async def detect_query_intent(
     Args:
         client: AsyncOpenAI client instance.
         query: The user's query.
-        model: Model to use for intent detection (default: gpt-5-mini-2025-08-07 for speed/cost).
+        model: Model to use for intent detection.
+            Default: gpt-5-mini-2025-08-07 (for speed/cost).
 
     Returns:
         List of API names that the query is relevant to.
@@ -59,7 +84,9 @@ async def detect_query_intent(
         f"- {name}: {desc}" for name, desc in API_DESCRIPTIONS.items()
     )
 
-    system_prompt = f"""You are an API intent classifier. Analyze user queries and determine which StackOne API(s) they are asking about.
+    system_prompt = (
+        f"""You are an API intent classifier. Analyze user queries and """
+        f"""determine which StackOne API(s) they are asking about.
 
 Available APIs:
 {api_list}
@@ -77,6 +104,7 @@ Examples:
 - "Compare employee and candidate endpoints" -> apis: ["hris", "ats"]
 - "How do I authenticate?" -> apis: ["stackone"]
 - "What APIs are available?" -> apis: ["all"]"""
+    )
 
     response = await client.beta.chat.completions.parse(
         model=model,

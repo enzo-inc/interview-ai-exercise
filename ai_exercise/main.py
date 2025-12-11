@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from fastapi import FastAPI
-
 from openai import AsyncOpenAI
 
 from ai_exercise.configs.base import CONFIGS, get_config
@@ -222,7 +221,11 @@ async def chat_route(chat_query: ChatQuery) -> ChatOutput:
 
     # Get relevant chunks - use hybrid search if enabled and BM25 index is available
     # When reranking is enabled, retrieve more candidates for the reranker to work with
-    retrieval_k = SETTINGS.k_neighbors * 3 if config.use_reranking else SETTINGS.k_neighbors
+    retrieval_k = (
+        SETTINGS.k_neighbors * 3
+        if config.use_reranking
+        else SETTINGS.k_neighbors
+    )
 
     if config.use_hybrid_search and current_bm25_index is not None:
         relevant_chunks = get_relevant_chunks_hybrid(

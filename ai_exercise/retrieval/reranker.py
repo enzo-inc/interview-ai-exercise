@@ -52,16 +52,22 @@ async def rerank_chunks(
     # Format chunks for the prompt
     chunks_text = _format_chunks_for_prompt(chunks)
 
-    system_prompt = """You are a relevance ranking expert. Given a query and a list of document chunks from API documentation, rank the chunks by their relevance to answering the query.
+    system_prompt = (
+        """You are a relevance ranking expert. Given a query and a list of """
+        """document chunks from API documentation, rank the chunks by their """
+        """relevance to answering the query.
 
 Rules:
 1. Rank chunks that directly answer the query highest
 2. Consider both exact matches and semantic relevance
-3. Chunks with specific endpoint/schema information are more valuable than general descriptions
+3. Chunks with specific endpoint/schema information are more valuable """
+        """than general descriptions
 4. Return indices of ALL chunks in order of relevance (most relevant first)
 5. Be precise - the order matters for retrieval quality
 
-Return the indices as a list of integers, e.g., [2, 0, 4, 1, 3] means chunk 2 is most relevant, then chunk 0, etc."""
+Return the indices as a list of integers, e.g., [2, 0, 4, 1, 3] means """
+        """chunk 2 is most relevant, then chunk 0, etc."""
+    )
 
     user_prompt = f"""Query: {query}
 

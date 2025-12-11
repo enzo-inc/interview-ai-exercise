@@ -22,19 +22,27 @@ def create_prompt(
     context_str = "\n\n".join(context)
 
     if use_unknown_detection:
-        return f"""Please answer the question based on the following context from StackOne API documentation.
+        return (
+            f"""Please answer the question based on the following context """
+            f"""from StackOne API documentation.
 
 Context:
 {context_str}
 
 Question: {query}
 
-IMPORTANT: If the provided context does not contain enough information to answer the question accurately, respond with:
-"I don't have enough information in the StackOne documentation to answer this question. [Brief explanation of what was found, if anything]"
+IMPORTANT: If the provided context does not contain enough information """
+            f"""to answer the question accurately, respond with:
+"I don't have enough information in the StackOne documentation to """
+            f"""answer this question. [Brief explanation of what was found, """
+            f"""if anything]"
 
-Do NOT guess or make up information about API fields, endpoints, or behavior. Only provide information that is explicitly supported by the context above.
+Do NOT guess or make up information about API fields, endpoints, or """
+            f"""behavior. Only provide information that is explicitly """
+            f"""supported by the context above.
 
 Answer:"""
+        )
     else:
         return f"""Please answer the question based on the following context:
 

@@ -69,7 +69,8 @@ async def evaluate_single_question_async(
     Args:
         question: The evaluation question to test.
         collection: ChromaDB collection with loaded documents.
-        async_client: Async OpenAI client for completions, intent detection, and reranking.
+        async_client: Async OpenAI client for completions, intent detection,
+            and reranking.
         run_judges: Whether to run LLM judges (slower but more detailed).
         config: System configuration to use for retrieval settings.
         bm25_index: BM25 index for hybrid search (required if config.use_hybrid_search).
@@ -326,7 +327,9 @@ def save_results(
         "accuracy_score": answer_metrics.accuracy_score,
     }
     if answer_metrics.abstention_accuracy is not None:
-        answer_quality_summary["abstention_accuracy"] = answer_metrics.abstention_accuracy
+        answer_quality_summary["abstention_accuracy"] = (
+            answer_metrics.abstention_accuracy
+        )
 
     output = {
         "config": config_name,
@@ -430,7 +433,10 @@ def run(config: str, eval_type: str, no_judges: bool, output: str) -> None:
     click.echo("\n--- Answer Quality Metrics ---")
     click.echo(f"Accuracy Score (1-5): {answer_metrics.accuracy_score:.2f}")
     if answer_metrics.abstention_accuracy is not None:
-        click.echo(f"Abstention Accuracy (0-1): {answer_metrics.abstention_accuracy:.2f}")
+        click.echo(
+            f"Abstention Accuracy (0-1): "
+            f"{answer_metrics.abstention_accuracy:.2f}"
+        )
 
     # Save results
     output_path = save_results(

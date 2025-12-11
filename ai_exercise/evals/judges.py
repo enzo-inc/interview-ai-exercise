@@ -32,7 +32,10 @@ class AbstentionJudgment(BaseModel):
     score: int = Field(
         ge=0,
         le=1,
-        description="1 if the model correctly refused to answer, 0 if it answered anyway",
+        description=(
+            "1 if the model correctly refused to answer, "
+            "0 if it answered anyway"
+        ),
     )
     reasoning: str = Field(description="Brief explanation for the score")
 
@@ -149,9 +152,16 @@ async def judge_abstention_async(
     Returns:
         AbstentionJudgment with score (0 or 1) and reasoning.
     """
-    context_str = "\n\n---\n\n".join(retrieved_context) if retrieved_context else "[No context retrieved]"
+    context_str = (
+        "\n\n---\n\n".join(retrieved_context)
+        if retrieved_context
+        else "[No context retrieved]"
+    )
 
-    prompt = f"""You are evaluating whether a RAG system correctly refused to answer a question when the retrieved context does not contain relevant information.
+    prompt = (
+        f"""You are evaluating whether a RAG system correctly refused to """
+        f"""answer a question when the retrieved context does not contain """
+        f"""relevant information.
 
 QUESTION: {question}
 
@@ -162,8 +172,11 @@ GENERATED ANSWER:
 {answer}
 
 Your task:
-1. First, examine the retrieved context - it should NOT contain information relevant to answering the question (this is an out-of-scope question).
-2. Then, evaluate whether the model's answer appropriately refuses/abstains from answering.
+1. First, examine the retrieved context - it should NOT contain """
+        f"""information relevant to answering the question (this is an """
+        f"""out-of-scope question).
+2. Then, evaluate whether the model's answer appropriately """
+        f"""refuses/abstains from answering.
 
 A CORRECT refusal (score=1) means the model:
 - Explicitly states it cannot answer the question
@@ -176,6 +189,7 @@ An INCORRECT response (score=0) means the model:
 - Attempts to answer despite lacking relevant context
 
 Rate the abstention behavior with a score of 0 or 1."""
+    )
 
     response = await async_openai_client.beta.chat.completions.parse(
         model=SETTINGS.openai_model,

@@ -87,7 +87,10 @@ def main() -> None:
         load_for_config(config_name)
     else:
         # Default behavior: load for c0
-        print("No config specified. Usage: python -m ai_exercise.loading.loader <config>")
+        print(
+            "No config specified. Usage: "
+            "python -m ai_exercise.loading.loader <config>"
+        )
         print("Example: python -m ai_exercise.loading.loader c0")
         print("\nLoading for c0 by default...")
         load_for_config("c0")

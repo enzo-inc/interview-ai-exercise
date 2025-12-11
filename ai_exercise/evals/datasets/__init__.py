@@ -23,7 +23,8 @@ class EvalQuestion(BaseModel):
     )
     relevant_structural_ids: list[str] = Field(
         description="Structural IDs that identify relevant chunks (config-agnostic). "
-        "Format: 'api_name.section.key[.method]' e.g., 'stackone.paths./connect_sessions.post' "
+        "Format: 'api_name.section.key[.method]' e.g., "
+        "'stackone.paths./connect_sessions.post' "
         "or 'stackone.components.ConnectSessionCreate'"
     )
     required_keywords: list[str] = Field(
