@@ -24,14 +24,18 @@ This project addresses the StackOne AI Engineer assignment: building a RAG (Retr
 
 ## 2. Approach & Architecture
 
-### Ablation Study Design
+### Incremental Feature Study
 
-I approached this problem by designing 6 experimental setups (configurations C0-C5) where each configuration introduces an additional feature to independently assess its effect on retrieval and answer performance.
+I approached this problem by designing 6 experimental setups (configurations C0-C5) where each configuration builds on the previous one by adding a single feature.
 
-This approach enables:
-- Quantitative measurement of each improvement's contribution
+Important caveat: This is incremental addition, not true ablation. True ablation would start with the full system (C5) and remove one feature at a time. My approach measures cumulative improvement but cannot isolate feature interactions - for example, I cannot determine whether smart chunking + hybrid search is better or worse than either alone.
+
+Given time and compute constraints, I chose this incremental approach to measure marginal gains. A complete ablation study would require 5 additional configurations (C5 minus each feature), which I would prioritize if continuing this work.
+
+What this approach does enable:
+- Measurement of marginal gains as each feature is added
 - Fair comparison using config-agnostic evaluation metrics
-- Clear understanding of which techniques provide the most value
+- Understanding of which features provide diminishing returns
 
 ### System Architecture
 
@@ -61,9 +65,9 @@ This approach enables:
 |--------|:--------------:|:-------------:|:---------------:|:---------:|:-----------------:|
 | C0     |                |               |                 |           |                   |
 | C1     | ✓              |               |                 |           |                   |
-| C2     |                | ✓             |                 |           |                   |
-| C3     |                |               | ✓               |           |                   |
-| C4     |                |               |                 | ✓         |                   |
+| C2     | ✓              | ✓             |                 |           |                   |
+| C3     | ✓              | ✓             | ✓               |           |                   |
+| C4     | ✓              | ✓             | ✓               | ✓         |                   |
 | C5     | ✓              | ✓             | ✓               | ✓         | ✓                 |
 
 ---
@@ -167,7 +171,7 @@ the question, respond with: 'I don't have enough information in the StackOne
 documentation to answer this question.'"
 ```
 
-This achieves 100% abstention accuracy on out-of-scope questions in our evaluation.
+This achieves 100% abstention accuracy on out-of-scope questions in the evaluation.
 
 ### 3.4 Evaluation Framework
 
@@ -206,173 +210,218 @@ Relevance is determined by structural ID matching: if a retrieved chunk's `cover
 
 The LLM judge evaluates whether the generated answer contains the same factual information as the ground truth, regardless of phrasing.
 
+#### Evaluation Limitations
+
+1. Small dataset: 84 questions is not enough for statistical significance. Differences of 0.1-0.2 in accuracy scores may be noise.
+2. Circular LLM validation: The same model is used to generate ground truth, answers, and judgements. This could mask systematic biases.
+3. Synthetic questions: LLM-generated questions may not represent real user queries. Production logs would be more valuable.
+4. Tiny out-of-scope sample: 100% abstention accuracy on 5 questions is meaningless statistically - it could easily be 80% with 1 failure.
+5. No latency measurement: C4/C5 use LLM reranking which adds significant latency, but I didn't measure this.
+
+Despite these limitations, I believe the relative comparisons between configs are valid.
+
 ---
 
 ## 4. Results
 
 ### Summary Table
 
-| Config | Hit Rate@5 | MRR (%) | Accuracy (%) | Abstention (%) |
-|--------|:----------:|:-------:|:------------:|:--------------:|
-| C0 (Baseline) | 65.8% | 50.9% | 68.4% | 20% |
-| C1 (Smart Chunking) | 92.4% | 79.7% | 64.0% | 20% |
-| C2 (Hybrid Search) | 93.7% | 76.8% | 66.6% | 40% |
-| C3 (Metadata Filter) | 92.4% | 78.2% | 66.4% | 40% |
-| C4 (Reranking) | 97.5% | 91.1% | 73.0% | 40% |
-| C5 (Full System) | 98.7% | 92.1% | 70.8% | 100% |
+| Config | Hit Rate@5 | MRR | Accuracy (1-5) | Abstention |
+|--------|:----------:|:---:|:--------------:|:----------:|
+| C0 (Baseline) | 65.8% | 50.9% | 3.42 | 20% |
+| C1 (Smart Chunking) | 92.4% | 79.7% | 3.20 | 20% |
+| C2 (Hybrid Search) | 93.7% | 76.8% | 3.33 | 40% |
+| C3 (Metadata Filter) | 92.4% | 78.2% | 3.32 | 40% |
+| C4 (Reranking) | 97.5% | 91.1% | 3.65 | 40% |
+| C5 (Full System) | 98.7% | 92.1% | 3.54 | 100% |
+
+*Accuracy is the average LLM judge score (1-5 scale) across 84 questions.*
 
 ### Key Findings
 
 1. Smart chunking provides the largest retrieval improvement (+27% hit rate). Endpoint-centric chunks with inlined schemas dramatically improve semantic matching.
-
 2. Reranking significantly improves ranking quality (+0.4 MRR over baseline). LLM reranking pushes relevant results to the top positions.
-
 3. Unknown detection works (100% abstention on out-of-scope). Simple prompt engineering is effective for detecting answerable questions.
-
 4. Hybrid search has marginal benefit over smart chunking alone. BM25 helps with exact term matching but the gain is small.
-
 5. Accuracy scores are relatively stable across configs (3.2-3.65). Retrieval improvements don't always translate to answer quality improvements, suggesting generation is a bottleneck.
+
+
+### System Demonstration
+
+The assignment provided 5 test questions. I ran all configurations (C0-C5) against these questions and verified answers against the ground-truth OpenAPI specs (results in [5_questions.md](5_questions.md))
+
+#### Ground Truth Reference (from OpenAPI specs)
+
+| Question | Actual Answer (from specs) |
+|----------|---------------------------|
+| Q1: Authentication | HTTP Basic (`securitySchemes.basic.scheme: "basic"`) |
+| Q2: Workday accounts | Yes - `/accounts` supports `provider` query param |
+| Q3: Session expiry | 1800 seconds (30 min) - `ConnectSessionCreate.expires_in.default: 1800` |
+| Q4: LMS course creation | No POST endpoint exists - only GET endpoints for courses |
+| Q5: Employee list response | `EmployeesPaginated` schema: `{ next_page, next, data: Employee[], raw }` |
+
+---
+
+#### Expected Behaviors
+
+Q1 & Q2 (Authentication & Workday filtering): All configurations (C0-C5) correctly identified HTTP Basic authentication and the ability to filter accounts via `GET /accounts?provider=workday`. This demonstrates that the core retrieval pipeline works well for straightforward, well-documented features.
+
+---
+
+#### Unexpected Behaviors
+
+Q3 (Session Token Expiry) - Massive variance across configs:
+
+| Config | Answer Given | Accuracy |
+|--------|-------------|----------|
+| C0 | "30 minutes" | Correct |
+| C1, C4 | "1 hour (3600 seconds)" | Wrong (2x actual) |
+| C2, C5 | Abstained | Correct behavior |
+| C3 | "24 hours (86,400 seconds)" | Wrong (48x actual) |
+
+Q4 (LMS Course Creation) - Hallucination in baseline:
+- C0 hallucinated that `learning_object_external_reference` is a required field
+- C1-C5 correctly indicated that no create endpoint exists or abstained
+- Ground truth: Only `GET /unified/lms/courses` and `GET /unified/lms/courses/{id}` exist
+
+Q5 (Employee List Response) - Schema reference accuracy:
+- C0 gave the most accurate answer: referenced `#/components/schemas/EmployeesPaginated`
+- C1-C4 provided partial JSON structures that were less precise
+- C5 abstained, stating insufficient information
+
+---
+
+#### Speculations
+
+1. Q3 variance explained: The default value `"default": 1800` is buried in `ConnectSessionCreate.properties.expires_in`. Naive chunking (C0) likely preserved the raw JSON containing this value, while smart chunking's prose conversion lost it. Configs that abstained (C2, C5) were actually more accurate than those that guessed incorrect values.
+
+2. C0's Q4 hallucination: Without smart chunking or unknown detection, C0 had no mechanism to verify that a POST endpoint actually exists. It inferred requirements from schema fields that are only used for GET responses.
+
+3. C0's Q5 accuracy: Naive chunking preserves schema references verbatim (`#/components/schemas/EmployeesPaginated`), which is the actual response type. Smart chunking expanded this into prose, losing precision.
+
+4. Unknown detection trade-off: C5's abstention on Q3 was technically correct - the retrieved context didn't contain the default value. However, the information *does* exist in the spec, just in a different chunk.
+
+### Failure Analysis
+
+Here are concrete examples of what failed and why, drawn from the C5 evaluation results:
+
+#### Failure 1: Overly Conservative Unknown Detection (Factual Questions)
+
+C5's factual questions scored only 2.90/5 despite 100% retrieval hit rate. The unknown detection prompt made the system too conservative:
+
+Example: "What is the default value of expires_in?"
+- Retrieved: Correct chunk (`stackone_components_connectsessioncreate_part0`) at rank 1
+- C5 Response: "I don't have enough information... The context only states that expires_in is 'How long the session should be valid for in seconds,' but it does not specify any default value."
+- Ground Truth: "defaults to 1800... expressed in seconds"
+- Score: 3/5
+
+The system retrieved the right information but the prose chunk didn't include the default value (due to the chunking issue discussed above), and the unknown detection prompt caused it to refuse rather than give a partial answer.
+
+#### Failure 2: Cross-API Questions Are Hardest
+
+Cross-API questions had the lowest accuracy (2.22/5) and only 89% retrieval hit rate:
+
+Example: "Which APIs support filter.updated_after and what is the parameter's type in each?"
+- Problem: Requires synthesizing information from 6 different API specs
+- Retrieval: Only 5 chunks retrieved, couldn't cover all 6 APIs
+- Generation: Even when chunks were retrieved, the LLM struggled to integrate scattered information into a coherent comparison
+
+This suggests cross-API questions may need higher k (more retrieved chunks) or a multi-hop retrieval strategy.
+
+#### Failure 3: Enum Values Lost in Chunking
+
+Example: "What are the allowed values for order_by?"
+- C0 Score: 4/5 (raw JSON contained `enum: ["provider", "service", "status", ...]`)
+- C5 Score: 2/5 (prose chunk said "field to order results by" without enum values)
+- C5 Response: "I don't have enough information... does not list which specific fields are valid for order_by"
+
+The enum values existed in the original spec but were not preserved in the prose formatting.
+
+#### What These Failures Reveal
+
+| Problem | Impact | Fix |
+|---------|--------|-----|
+| Prose chunking loses structured data | Factual accuracy drops | Keep JSON metadata alongside prose |
+| Unknown detection too aggressive | Refuses valid questions | Calibrate threshold based on retrieval confidence |
+| Fixed k=5 retrieval | Cross-API questions under-served | Dynamic k based on question complexity |
 
 ---
 
 ## 5. Future Improvements
 
-### 5.1 Retrieval Enhancements
+Based on the failure analysis above and the 5-question test results, these are the next steps I'd take:
 
-#### Query Expansion & Rewriting
+### Priority 1: Hybrid Prose + JSON Chunking
 
-Current queries are used as-is. Improvements:
-- HyDE (Hypothetical Document Embeddings): Generate a hypothetical answer, embed that instead of the query
-- Query decomposition: Break complex queries into sub-queries
-- Synonym expansion: Add API-specific synonyms (e.g., "employee" → "worker", "staff")
+Problem it solves: The C1 accuracy drop (3.42 → 3.20) and lost enum/default values.
 
-#### Multi-Vector Retrieval
+Evidence from 5-question test:
+- Q3 (session expiry): The `"default": 1800` value exists in `ConnectSessionCreate.expires_in` but was lost when converting to prose. C1/C3/C4 hallucinated wrong values (3600, 86400) because they couldn't find the actual default.
+- Q5 (employee response): C0's raw `#/components/schemas/EmployeesPaginated` reference was more accurate than C1-C4's prose expansions.
 
-Current single-vector approach has limitations. Alternatives:
-- ColBERT: Late interaction model that computes similarity at the token level, better for exact matching
-- Multi-vector embeddings: Store multiple vectors per chunk (e.g., title + content separately)
+Implementation: Store two representations per chunk:
+1. Prose format for semantic retrieval (what we have now)
+2. Raw JSON metadata appended to generation context
+3. New: Explicitly preserve `default`, `enum`, `minimum`, `maximum` values inline in prose format
 
-#### Learned Sparse Representations
+### Priority 2: Calibrated Unknown Detection
 
-- SPLADE: Learned sparse vectors that combine semantic understanding with keyword matching
-- Better than manual hybrid search as weights are learned
+Problem it solves: Overly conservative abstention on answerable factual questions.
 
-#### Hierarchical Retrieval
+Evidence from 5-question test:
+- Q3: C5 abstained correctly (the retrieved context didn't contain the default), but a partial answer would have been more useful: "The spec defines `expires_in` as 'how long the session should be valid for in seconds', but I don't see a default value in my context."
+- Q5: C5 abstained entirely when it could have provided the schema structure from retrieved chunks.
 
-Current flat retrieval doesn't leverage document structure:
-- Coarse-to-fine: First retrieve relevant APIs, then relevant endpoints
-- Parent-child chunks: Small chunks for retrieval, larger chunks for context
+Implementation: Instead of a binary "I don't have enough information" prompt:
+- Calculate retrieval confidence (e.g., max similarity score, number of hits)
+- Only trigger abstention when confidence is below threshold
+- New: Implement confidence tiers: "definite answer" vs "partial answer with caveats" vs "cannot answer"
+- Partial answers are better than refusals when context exists
 
-#### Contextual Retrieval
 
-Anthropic's contextual retrieval approach:
-- Prepend each chunk with LLM-generated context about where it fits in the overall document
-- Improves retrieval for chunks that lack standalone context
+### Priority 3: Dynamic k for Cross-API Questions
 
-### 5.2 Embedding Model Improvements
+Problem it solves: Cross-API questions (2.22/5 accuracy) are under-served by fixed k=5.
 
-#### Domain-Specific Fine-Tuning
+Implementation:
+- Detect query intent (already implemented in C3)
+- If multiple APIs detected, increase k proportionally (e.g., k=5 per API)
+- Alternatively: retrieve top-k from each API separately, then merge
 
-Current `text-embedding-3-small` is general-purpose. Options:
-- Fine-tune on OpenAPI documentation
-- Use contrastive learning with question-chunk pairs from our evaluation set
+### Priority 4: Hallucination Prevention for Write Operations
 
-#### Larger Context Embeddings
+Problem it solves: Baseline (C0) hallucinated requirements for non-existent endpoints.
 
-Current 8K token limit can truncate large chunks:
-- jina-embeddings-v3: 8K context, multiple task-specific adapters
-- Voyage AI: Up to 16K context embeddings
+Evidence from 5-question test:
+- Q4 (LMS course creation): C0 confidently stated that `learning_object_external_reference` is required to create a course, but no POST endpoint exists for courses. The spec only has `GET /unified/lms/courses` and `GET /unified/lms/courses/{id}`.
 
-#### Matryoshka Embeddings
+Implementation:
+- Add explicit endpoint existence verification before generating answers about write operations
+- Pre-generation check: if question asks "how to create/update/delete X", verify the relevant HTTP method (POST/PUT/PATCH/DELETE) exists in retrieved context
+- If no write endpoint found, respond with "The API does not appear to support creating/updating X" rather than inferring from schema fields
 
-For production efficiency:
-- Use Matryoshka Representation Learning (MRL) models
-- Allows using smaller embedding dimensions without retraining
-- Trade-off between accuracy and storage/speed
 
-### 5.3 Generation Improvements
+## 6. Production Considerations
 
-#### Chain-of-Thought Reasoning
+If deploying this system, these operational concerns would need addressing:
 
-Current generation is single-shot. Improvements:
-- Have the model reason about which retrieved chunks are relevant
-- Step-by-step answer construction
+Latency vs. Accuracy Tradeoff: C4/C5 use LLM reranking which adds ~5-7s latency per query. For interactive use cases, we could use:
+- Caching reranked results for common queries
+- Async reranking with immediate vector-only results, then updated answer
+- Threshold-based reranking (only trigger for low-confidence initial retrievals)
 
-#### Self-Consistency / Verification
+Caching Strategy:
+- Embedding cache for spec reloads (specs change infrequently, embeddings are expensive)
+- Query result cache for repeated questions (many users ask the same things)
+- Invalidation on spec updates via content hashing
 
-- Generate multiple answers, select most consistent
-- Post-generation fact-checking against retrieved context
-- Citation extraction to verify claims are grounded
+Query Decomposition for Cross-API Questions: The current system retrieves k=5 chunks regardless of query complexity. For questions like "which APIs support X", a more principled approach:
+- Detect multi-API intent
+- Decompose into N sub-queries (one per API)
+- Retrieve and synthesize separately
+- This directly addresses the 2.22/5 accuracy on cross-API questions
 
-#### Structured Output
-
-For API documentation questions:
-- Generate structured responses (JSON with endpoint, parameters, etc.)
-- Better for integration with developer tools
-
-### 5.4 Index & Storage Improvements
-
-#### Knowledge Graph Integration
-
-OpenAPI specs have rich structure:
-- Build a knowledge graph of APIs, endpoints, schemas, relationships
-- Combine graph traversal with vector search
-- Better for multi-hop questions ("What schema does the employee endpoint return?")
-
-#### ANN Optimizations
-
-Current ChromaDB with default HNSW settings:
-- Tune HNSW parameters (ef_construction, M) for better recall/speed trade-off
-- Consider IVF indexes for larger scale
-
-#### Quantization
-
-For production scale:
-- Product quantization (PQ) for memory efficiency
-- Binary quantization for speed
-- Trade-off: ~5% recall loss for 32x memory reduction
-
-### 5.5 Caching & Performance
-
-#### Query Result Caching
-
-- Cache frequent query results (many API questions are repeated)
-- Semantic cache: similar queries return cached results
-- TTL-based invalidation when specs update
-
-#### Embedding Caching
-
-- Cache embeddings for repeated document loads
-- Useful for development iteration
-
-#### Batch Processing
-
-- Current evaluation runs queries sequentially
-- Batch embedding and generation calls for throughput
-
-### 5.6 Evaluation Improvements
-
-#### Human-in-the-Loop Validation
-
-Current ground truth is LLM-generated:
-- Validate a sample manually
-- Identify systematic errors in generation
-
-#### Separate Model Families
-
-Using same model (GPT-4) for generation and judging may introduce bias:
-- Use Claude for judging GPT-4 outputs (or vice versa)
-- Multiple judges with voting
-
-#### Larger Test Sets
-
-Current 84 questions is small:
-- Generate more questions per category
-- Add edge cases (ambiguous queries, multi-part questions)
-- Include real user questions from production logs
-
-#### End-to-End User Testing
-
-- A/B test configurations with real users
-- Measure task completion, not just accuracy scores
-- Track follow-up question rates (lower is better)
+Evaluation Data Collection: The current synthetic dataset has significant limitations (LLM-generated, small sample, circular validation). In production:
+- Log real user queries with opt-in feedback (thumbs up/down, "this didn't answer my question")
+- Build a human-annotated golden set from the most common query patterns
+- Use a different model family for judging (e.g., Claude for judging GPT-generated answers) to break circular validation
