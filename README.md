@@ -1,4 +1,66 @@
-# AI Exercise - Retrieval
+# StackOne OpenAPI RAG System
+
+RAG system for answering questions about StackOne's 7 OpenAPI specifications with ablation study evaluation.
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- OpenAI API key
+
+### Setup
+
+1. Clone and enter the repository
+2. Copy `.env_example` to `.env` and add your `OPENAI_API_KEY`
+3. Run the setup script:
+   ```bash
+   python scripts/setup.py
+   ```
+   This installs dependencies and creates indices for all configurations (C0-C5).
+
+### Running the Demo
+
+```bash
+make start-app
+```
+
+Access at http://localhost:8501
+
+### Running Evaluations
+
+```bash
+# Evaluate a specific config
+make eval CONFIG=c0
+
+# Compare multiple configs
+make eval-compare CONFIGS=c0,c1,c2,c3,c4,c5
+
+# View results comparison in Streamlit
+make compare-evals
+```
+
+Results are saved to `reports/results/`.
+
+### Configurations
+
+| Config | Description |
+|--------|-------------|
+| c0 | Baseline: naive chunking, vector search |
+| c1 | Smart endpoint-centric chunking |
+| c2 | Hybrid search (BM25 + vector with RRF) |
+| c3 | Query intent detection for API filtering |
+| c4 | LLM-based reranking |
+| c5 | Full system with unknown detection |
+
+See [WRITEUP.md](WRITEUP.md) for detailed explanation of the approach and results.
+
+---
+
+# Original README
+
+## AI Exercise - Retrieval
 
 > simple RAG example
 
