@@ -22,6 +22,12 @@ RAG system for answering questions about StackOne's 7 OpenAPI specifications wit
 
 ### Running the Demo
 
+Start the backend API (in one terminal):
+```bash
+make dev-api
+```
+
+Start the Streamlit frontend (in another terminal):
 ```bash
 make start-app
 ```
