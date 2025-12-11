@@ -388,7 +388,7 @@ Implementation:
 - If multiple APIs detected, increase k proportionally (e.g., k=5 per API)
 - Alternatively: retrieve top-k from each API separately, then merge
 
-### Priority 4: Hallucination Prevention for Write Operations
+### Priority 4: Hallucination Prevention
 
 Problem it solves: Baseline (C0) hallucinated requirements for non-existent endpoints.
 
@@ -396,7 +396,7 @@ Evidence from 5-question test:
 - Q4 (LMS course creation): C0 confidently stated that `learning_object_external_reference` is required to create a course, but no POST endpoint exists for courses. The spec only has `GET /unified/lms/courses` and `GET /unified/lms/courses/{id}`.
 
 Implementation:
-- Add explicit endpoint existence verification before generating answers about write operations
+- Add explicit endpoint existence verification before generating answers
 - Pre-generation check: if question asks "how to create/update/delete X", verify the relevant HTTP method (POST/PUT/PATCH/DELETE) exists in retrieved context
 - If no write endpoint found, respond with "The API does not appear to support creating/updating X" rather than inferring from schema fields
 
