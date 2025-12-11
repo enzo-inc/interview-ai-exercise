@@ -49,17 +49,14 @@ def load_for_config(config_name: str) -> None:
         collection = create_collection(chroma_client, openai_ef, collection_name)
 
     # Load all specs with config's chunking strategy
-    print("Fetching OpenAPI specs...")
     documents = load_all_specs(use_smart_chunking=config.use_smart_chunking)
     print(f"Loaded {len(documents)} documents from specs")
 
     # Split docs that are too long
-    print("Splitting documents...")
     documents = split_docs(documents)
     print(f"After splitting: {len(documents)} documents")
 
     # Load documents into vector store
-    print("Adding documents to vector store...")
     add_documents(collection, documents)
 
     # Build and save BM25 index

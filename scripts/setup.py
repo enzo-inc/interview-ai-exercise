@@ -108,13 +108,12 @@ def load_config(config: str) -> bool:
     result = subprocess.run(
         ["uv", "run", "python", "-m", "ai_exercise.loading.loader", config],
         cwd=project_root,
-        capture_output=True,
+        capture_output=False,  # Don't capture output so progress bars are visible
         text=True,
     )
 
     if result.returncode != 0:
         print_error(f"Failed to load config {config}")
-        print(result.stderr)
         return False
 
     print_success(f"Config {config} loaded")
@@ -161,17 +160,20 @@ def main() -> int:
 
     print("All configurations have been loaded. You can now:")
     print()
-    print("  1. Run the demo app:")
+    print("  1. Start the backend API:")
+    print("     make dev-api")
+    print()
+    print("  2. Run the demo app (in another terminal):")
     print("     make start-app")
     print()
-    print("  2. Run evaluations:")
+    print("  3. Run evaluations:")
     print("     make eval CONFIG=c0")
     print("     make eval CONFIG=c5")
     print()
-    print("  3. Compare configurations:")
+    print("  4. Compare configurations:")
     print("     make eval-compare CONFIGS=c0,c1,c2,c3,c4,c5")
     print()
-    print("  4. View results in Streamlit:")
+    print("  5. View results in Streamlit:")
     print("     make compare-evals")
     print()
 

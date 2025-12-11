@@ -6,6 +6,7 @@ from typing import Any
 import chromadb
 import requests
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from tqdm import tqdm
 
 from ai_exercise.constants import OPENAPI_SPECS, SETTINGS
 from ai_exercise.loading.chunk_json import chunk_data_with_ids
@@ -114,7 +115,9 @@ def load_all_specs(use_smart_chunking: bool = False) -> list[Document]:
         List of Document objects from all API specs.
     """
     all_docs: list[Document] = []
-    for api_name, url in OPENAPI_SPECS.items():
+    for api_name, url in tqdm(
+        OPENAPI_SPECS.items(), desc="Fetching OpenAPI specs", unit="spec"
+    ):
         json_data = get_json_data(url)
         if use_smart_chunking:
             docs = build_smart_chunks(json_data, api_name=api_name)
@@ -135,7 +138,7 @@ def split_docs(docs_array: list[Document]) -> list[Document]:
 
     # Split documents and preserve chunk IDs
     split_documents = []
-    for doc in docs_array:
+    for doc in tqdm(docs_array, desc="Splitting documents", unit="doc"):
         splits = splitter.split_documents([doc])
         base_chunk_id = doc.metadata.get("chunk_id", "unknown")
 
@@ -166,7 +169,14 @@ def add_documents(
         batch_size: Number of documents per batch to avoid API token limits.
     """
     total = len(docs)
-    for i in range(0, total, batch_size):
+    num_batches = (total + batch_size - 1) // batch_size
+    
+    for i in tqdm(
+        range(0, total, batch_size),
+        desc="Adding documents to vector store",
+        unit="batch",
+        total=num_batches,
+    ):
         batch = docs[i : i + batch_size]
         # Use chunk_id from metadata as ChromaDB ID
         ids = [
@@ -178,4 +188,3 @@ def add_documents(
             metadatas=[doc.metadata or {} for doc in batch],
             ids=ids,
         )
-        print(f"Added batch {i // batch_size + 1} ({i + len(batch)}/{total})")
